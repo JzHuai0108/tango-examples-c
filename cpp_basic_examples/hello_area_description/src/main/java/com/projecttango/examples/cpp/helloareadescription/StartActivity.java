@@ -18,9 +18,17 @@ package com.projecttango.examples.cpp.helloareadescription;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ToggleButton;
+
+import java.sql.Timestamp;
+import java.util.Vector;
 
 /**
  * This starter activity allows user to setup the Area Learning configuration.
@@ -39,6 +47,9 @@ public class StartActivity extends Activity {
     private static final String AREA_LEARNING_PERMISSION =
             "ADF_LOAD_SAVE_PERMISSION";
 
+    private static final String DATASET_PERMISSION =
+            "DATASET_PERMISSION";
+
     // Permission request action.
     public static final int REQUEST_CODE_TANGO_PERMISSION = 0;
     private static final String REQUEST_PERMISSION_ACTION =
@@ -50,6 +61,20 @@ public class StartActivity extends Activity {
 
     private boolean mIsUseAreaLearning;
     private boolean mIsLoadAdf;
+
+    private SensorManager mSensorManager;
+    private SensorEventListener mListener;
+    private long mStartTimestamp;
+    private static final float NS2S = 1.0f / 1000000000.0f;
+
+    public int accel_count;
+    public int gyro_count;
+    public long accel_interval;
+    public long gyro_interval;
+
+    public void printStats() {
+        Log.i("AreaDescriptionApp", "Sample interval accel " + accel_interval/accel_count + " gyro " + gyro_interval/gyro_count);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,12 +92,57 @@ public class StartActivity extends Activity {
         if (!Util.hasPermission(getApplicationContext(), AREA_LEARNING_PERMISSION)) {
             getPermission(AREA_LEARNING_PERMISSION);
         }
+        if (!Util.hasPermission(getApplicationContext(), DATASET_PERMISSION)) {
+            getPermission(DATASET_PERMISSION);
+        }
+        mSensorManager = (SensorManager) getSystemService(getApplicationContext().SENSOR_SERVICE);
+
+        // c.f. https://stackoverflow.com/questions/12326429/get-multiple-sensor-data-at-the-same-time-in-android
+        // c.f. https://stackoverflow.com/questions/17776051/how-to-implement-gyroscope-sensor-in-android
+        // c.f. http://www.41post.com/3745/programming/android-acessing-the-gyroscope-sensor-for-simple-applications
+        // c.f. https://developer.android.com/guide/topics/sensors/sensors_motion.html#sensors-motion-gyro
+        mListener = new SensorEventListener() {
+            @Override
+            public void onAccuracyChanged(Sensor arg0, int arg1) {
+            }
+
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                Sensor sensor = event.sensor;
+                final long timestamp = event.timestamp;
+                // Axis of the rotation sample, not normalized yet.
+                float axisX = event.values[0];
+                float axisY = event.values[1];
+                float axisZ = event.values[2];
+
+                if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                    ++accel_count;
+                    accel_interval = timestamp - mStartTimestamp;
+                    //Log.i("AreaDescriptionApp", "Accel meas " + timestamp + " " + axisX + " " + axisY + " " + axisZ);
+                }
+                else if (sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                    ++gyro_count;
+                    gyro_interval = timestamp - mStartTimestamp;
+                    //Log.i("AreaDescriptionApp", "Gyro meas " + timestamp + " " + axisX + " " + axisY + " " + axisZ);
+                }
+                if (mStartTimestamp == 0) {
+                    mStartTimestamp = timestamp;
+                }
+                if (accel_count % 500 == 0) {
+                    printStats();
+                }
+            }
+
+        };
+
+        mSensorManager.registerListener(mListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(mListener, mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     /**
      * The "Load ADF" button has been clicked.
      * Defined in {@code activity_start.xml}
-     * */
+     */
     public void loadAdfClicked(View v) {
         mIsLoadAdf = mLoadAdfToggleButton.isChecked();
     }
@@ -147,4 +217,11 @@ public class StartActivity extends Activity {
         Intent startADFListViewIntent = new Intent(this, AdfUuidListViewActivity.class);
         startActivity(startADFListViewIntent);
     }
+
+    @Override
+    protected void onDestroy() {
+        mSensorManager.unregisterListener(mListener);
+        super.onDestroy();
+    }
+
 }

@@ -98,7 +98,7 @@ void HelloVideoApp::OnTangoServiceConnected(JNIEnv* env, jobject binder) {
     std::exit(EXIT_SUCCESS);
   }
 
-  ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_COLOR, this,
+  ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_FISHEYE, this,
                                              OnFrameAvailableRouter);
   if (ret != TANGO_SUCCESS) {
     LOGE(
@@ -149,6 +149,7 @@ void HelloVideoApp::OnPause() {
 }
 
 void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
+  LOGI("HelloVideoApp::texture method %d", current_texture_method_);
   if (current_texture_method_ != TextureMethod::kYuv) {
     return;
   }
@@ -158,10 +159,10 @@ void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
     return;
   }
 
-  if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
+  /*if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
     LOGE("HelloVideoApp::yuv texture format is not supported by this app");
     return;
-  }
+  }*/
 
   // The memory needs to be allocated after we get the first frame because we
   // need to know the size of the image.
@@ -179,11 +180,14 @@ void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
 
     AllocateTexture(yuv_drawable_->GetTextureId(), yuv_width_, yuv_height_);
     is_yuv_texture_available_ = true;
+    fisheye_frame_saver_.Initialize(buffer);
   }
 
   std::lock_guard<std::mutex> lock(yuv_buffer_mutex_);
   memcpy(&yuv_temp_buffer_[0], buffer->data, yuv_size_);
   swap_buffer_signal_ = true;
+
+  fisheye_frame_saver_.GleanFrameInfo(yuv_buffer_, buffer);
 }
 
 void HelloVideoApp::DeleteDrawables() {
@@ -222,7 +226,7 @@ void HelloVideoApp::OnDrawFrame() {
     // content is properly allocated.
     int texture_id = static_cast<int>(video_overlay_drawable_->GetTextureId());
     TangoErrorType ret = TangoService_connectTextureId(
-        TANGO_CAMERA_COLOR, texture_id, nullptr, nullptr);
+        TANGO_CAMERA_FISHEYE, texture_id, nullptr, nullptr);
     if (ret != TANGO_SUCCESS) {
       LOGE(
           "HelloVideoApp: Failed to connect the texture id with error"
@@ -292,6 +296,8 @@ void HelloVideoApp::RenderYuv() {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, yuv_width_, yuv_height_, 0, GL_RGB,
                GL_UNSIGNED_BYTE, rgb_buffer_.data());
 
+  fisheye_frame_saver_.SaveFrame();
+
   yuv_drawable_->Render(glm::mat4(1.0f), glm::mat4(1.0f));
 }
 
@@ -299,7 +305,7 @@ void HelloVideoApp::RenderTextureId() {
   double timestamp;
   // TangoService_updateTexture() updates target camera's
   // texture and timestamp.
-  int ret = TangoService_updateTexture(TANGO_CAMERA_COLOR, &timestamp);
+  int ret = TangoService_updateTexture(TANGO_CAMERA_FISHEYE, &timestamp);
   if (ret != TANGO_SUCCESS) {
     LOGE(
         "HelloVideoApp: Failed to update the texture id with error code: "
