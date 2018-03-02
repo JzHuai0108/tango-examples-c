@@ -98,7 +98,7 @@ void HelloVideoApp::OnTangoServiceConnected(JNIEnv* env, jobject binder) {
     std::exit(EXIT_SUCCESS);
   }
 
-  ret = TangoService_connectOnFrameAvailable(TANGO_CAMERA_FISHEYE, this,
+  ret = TangoService_connectOnFrameAvailable(CAMERA_OF_INTEREST, this,
                                              OnFrameAvailableRouter);
   if (ret != TANGO_SUCCESS) {
     LOGE(
@@ -149,7 +149,9 @@ void HelloVideoApp::OnPause() {
 }
 
 void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
-  LOGI("HelloVideoApp::texture method %d", current_texture_method_);
+  int64_t local_duration = buffer->exposure_duration_ns;
+  double dduration = local_duration*1e-6;
+  LOGI("HelloVideoApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
   if (current_texture_method_ != TextureMethod::kYuv) {
     return;
   }
@@ -226,7 +228,7 @@ void HelloVideoApp::OnDrawFrame() {
     // content is properly allocated.
     int texture_id = static_cast<int>(video_overlay_drawable_->GetTextureId());
     TangoErrorType ret = TangoService_connectTextureId(
-        TANGO_CAMERA_FISHEYE, texture_id, nullptr, nullptr);
+        CAMERA_OF_INTEREST, texture_id, nullptr, nullptr);
     if (ret != TANGO_SUCCESS) {
       LOGE(
           "HelloVideoApp: Failed to connect the texture id with error"
@@ -305,7 +307,7 @@ void HelloVideoApp::RenderTextureId() {
   double timestamp;
   // TangoService_updateTexture() updates target camera's
   // texture and timestamp.
-  int ret = TangoService_updateTexture(TANGO_CAMERA_FISHEYE, &timestamp);
+  int ret = TangoService_updateTexture(CAMERA_OF_INTEREST, &timestamp);
   if (ret != TANGO_SUCCESS) {
     LOGE(
         "HelloVideoApp: Failed to update the texture id with error code: "
