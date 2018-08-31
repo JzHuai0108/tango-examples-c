@@ -205,8 +205,8 @@ void HelloVideoApp::OnSurfaceCreated() {
   }
 
   video_overlay_drawable_ =
-      new tango_gl::VideoOverlay(GL_TEXTURE_EXTERNAL_OES, display_rotation_);
-  yuv_drawable_ = new tango_gl::VideoOverlay(GL_TEXTURE_2D, display_rotation_);
+      new tango_gl::VideoOverlay(GL_TEXTURE_EXTERNAL_OES, TANGO_SUPPORT_ROTATION_180);
+  yuv_drawable_ = new tango_gl::VideoOverlay(GL_TEXTURE_2D, TANGO_SUPPORT_ROTATION_180);
 }
 
 void HelloVideoApp::OnSurfaceChanged(int width, int height) {
@@ -238,8 +238,8 @@ void HelloVideoApp::OnDrawFrame() {
   }
 
   if (!is_video_overlay_rotation_set_) {
-    video_overlay_drawable_->SetDisplayRotation(display_rotation_);
-    yuv_drawable_->SetDisplayRotation(display_rotation_);
+    video_overlay_drawable_->SetDisplayRotation(TANGO_SUPPORT_ROTATION_180);
+    yuv_drawable_->SetDisplayRotation(TANGO_SUPPORT_ROTATION_180);
     is_video_overlay_rotation_set_ = true;
   }
 
