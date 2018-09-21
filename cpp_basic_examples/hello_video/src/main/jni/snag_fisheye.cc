@@ -32,7 +32,7 @@ bool SaveFisheyeFrame::SaveFrame() {
     std::string filename = o.str();
     std::ofstream ofs(filename, std::ofstream::out);
 
-    LOGI("HelloVideoApp::creating image file %s", filename.c_str());
+    //LOGI("HelloVideoApp::creating image file %s", filename.c_str());
     for (int row = 0; row < yuv_height_; ++row) {
       for (int col = 0; col < yuv_width_; ++col) {
         int index = row*yuv_width_ + col;

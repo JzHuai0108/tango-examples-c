@@ -19,15 +19,23 @@ package com.projecttango.examples.cpp.hellovideo;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.hardware.display.DisplayManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ToggleButton;
 
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Random;
 
 /**
  * Main activity shows video overlay scene.
@@ -35,6 +43,9 @@ import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 public class HelloVideoActivity extends Activity {
     private GLSurfaceView mSurfaceView;
     private ToggleButton mYuvRenderSwitcher;
+    private Button mSaveFisheyeButton;
+    private Bitmap mFisheyeImage;
+    private String TAG = "HelloVideoActivity";
 
     private ServiceConnection mTangoServiceCoonnection = new ServiceConnection() {
         @Override
@@ -78,13 +89,14 @@ public class HelloVideoActivity extends Activity {
         }
 
 
-
         // Configure OpenGL renderer
         mSurfaceView = (GLSurfaceView) findViewById(R.id.surfaceview);
         mSurfaceView.setEGLContextClientVersion(2);
         mSurfaceView.setRenderer(new HelloVideoRenderer());
 
         mYuvRenderSwitcher = (ToggleButton) findViewById(R.id.yuv_switcher);
+        mSaveFisheyeButton = (Button) findViewById(R.id.save_fisheye);
+        mFisheyeImage = Bitmap.createBitmap(480, 640, Bitmap.Config.ARGB_8888);
     }
 
     @Override
@@ -108,6 +120,29 @@ public class HelloVideoActivity extends Activity {
      */
     public void renderModeClicked(View view) {
         TangoJniNative.setYuvMethod(mYuvRenderSwitcher.isChecked());
+    }
+
+    public void saveFisheye(View view) {
+        TangoJniNative.onSaveFisheye(mFisheyeImage);
+        String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(root + "/Pictures");
+        myDir.mkdirs();
+        Random generator = new Random();
+        int n = 1000000;
+        n = generator.nextInt(n);
+        String fname = "Image-" + n + ".jpg";
+        File file = new File(myDir, fname);
+        Log.i(TAG, "" + file);
+        if (file.exists())
+            file.delete();
+        try {
+            FileOutputStream out = new FileOutputStream(file);
+            mFisheyeImage.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**

@@ -89,6 +89,8 @@ class HelloVideoApp {
   // https://developer.android.com/reference/android/view/Display.html#getRotation()
   void OnDisplayChanged(int display_rotation);
 
+  void saveFisheye(void* pixels);
+
  private:
   // Tango configration file, this object is for configuring Tango Service setup
   // before connect to service. For example, we set the flag
@@ -104,6 +106,7 @@ class HelloVideoApp {
   std::vector<uint8_t> yuv_buffer_;
   std::vector<uint8_t> yuv_temp_buffer_;
   std::vector<GLubyte> rgb_buffer_;
+  std::vector<unsigned char> rgba_buffer_;
 
   std::atomic<bool> is_yuv_texture_available_;
   std::atomic<bool> swap_buffer_signal_;

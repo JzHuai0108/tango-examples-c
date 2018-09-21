@@ -18,6 +18,7 @@
 
 #include <tango_support.h>
 #include <tango_3d_reconstruction_api.h>
+#include <string.h>
 
 #include "hello_area_description/hello_area_description_app.h"
 

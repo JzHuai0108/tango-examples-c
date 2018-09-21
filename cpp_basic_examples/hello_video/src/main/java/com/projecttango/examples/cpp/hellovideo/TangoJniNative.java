@@ -17,6 +17,7 @@
 package com.projecttango.examples.cpp.hellovideo;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -83,4 +84,9 @@ public class TangoJniNative {
      * Respond to a display change.
      */
     public static native void onDisplayChanged(int displayRotation);
+
+    /**
+     * save fisheye image to file.
+     */
+    public static native void onSaveFisheye(Bitmap fisheye);
 }

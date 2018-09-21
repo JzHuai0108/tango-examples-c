@@ -45,6 +45,31 @@ inline void Yuv2Rgb(uint8_t y_value, uint8_t u_value, uint8_t v_value,
   *g = float_g * (!(float_g > 255)) + 255 * (float_g > 255);
   *b = float_b * (!(float_b > 255)) + 255 * (float_b > 255);
 }
+
+//inline ByteBuffer bgr2rgba(ByteBuffer in, int width, int height, int stride, int rowBytes) {
+//    if (!in.order().equals(ByteOrder.LITTLE_ENDIAN)) {
+//        in = in.order(ByteOrder.LITTLE_ENDIAN);
+//    }
+//    if (buffer == null || buffer.capacity() < height * rowBytes) {
+//        buffer = ByteBuffer.allocate(height * rowBytes);
+//    }
+//    for (int y = 0; y < height; y++) {
+//        for (int x = 0; x < width; x++) {
+//            // BGR -> RGBA
+//            int rgb;
+//            if (x < width - 1 || y < height - 1) {
+//                rgb = in.getInt(y * stride + 3 * x);
+//            } else {
+//                int b = in.get(y * stride + 3 * x    ) & 0xff;
+//                int g = in.get(y * stride + 3 * x + 1) & 0xff;
+//                int r = in.get(y * stride + 3 * x + 2) & 0xff;
+//                rgb = (r << 16) | (g << 8) | b;
+//            }
+//            buffer.putInt(y * rowBytes + 4 * x, (rgb << 8) | 0xff);
+//        }
+//    }
+//    return buffer;
+//}
 }  // namespace
 
 namespace hello_video {
@@ -151,7 +176,7 @@ void HelloVideoApp::OnPause() {
 void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
   int64_t local_duration = buffer->exposure_duration_ns;
   double dduration = local_duration*1e-6;
-  LOGI("HelloVideoApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
+  //LOGI("HelloVideoApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
   if (current_texture_method_ != TextureMethod::kYuv) {
     return;
   }
@@ -179,17 +204,18 @@ void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
     yuv_buffer_.resize(yuv_size_);
     yuv_temp_buffer_.resize(yuv_size_);
     rgb_buffer_.resize(yuv_width_ * yuv_height_ * 3);
+    rgba_buffer_.resize(yuv_width_ * yuv_height_ * 4);
 
     AllocateTexture(yuv_drawable_->GetTextureId(), yuv_width_, yuv_height_);
     is_yuv_texture_available_ = true;
-    fisheye_frame_saver_.Initialize(buffer);
+    //fisheye_frame_saver_.Initialize(buffer);
   }
 
   std::lock_guard<std::mutex> lock(yuv_buffer_mutex_);
   memcpy(&yuv_temp_buffer_[0], buffer->data, yuv_size_);
   swap_buffer_signal_ = true;
 
-  fisheye_frame_saver_.GleanFrameInfo(yuv_buffer_, buffer);
+  //fisheye_frame_saver_.GleanFrameInfo(yuv_buffer_, buffer);
 }
 
 void HelloVideoApp::DeleteDrawables() {
@@ -291,6 +317,10 @@ void HelloVideoApp::RenderYuv() {
           yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index],
           &rgb_buffer_[rgb_index], &rgb_buffer_[rgb_index + 1],
           &rgb_buffer_[rgb_index + 2]);
+        rgba_buffer_[rgb_index] = rgb_buffer_[rgb_index];
+        rgba_buffer_[rgb_index + 1] = rgb_buffer_[rgb_index + 1];
+        rgba_buffer_[rgb_index + 2] = rgb_buffer_[rgb_index + 2];
+        rgba_buffer_[rgb_index + 3] = 1;
     }
   }
 
@@ -298,7 +328,7 @@ void HelloVideoApp::RenderYuv() {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, yuv_width_, yuv_height_, 0, GL_RGB,
                GL_UNSIGNED_BYTE, rgb_buffer_.data());
 
-  fisheye_frame_saver_.SaveFrame();
+//  fisheye_frame_saver_.SaveFrame();
 
   yuv_drawable_->Render(glm::mat4(1.0f), glm::mat4(1.0f));
 }
@@ -322,4 +352,11 @@ void HelloVideoApp::OnDisplayChanged(int display_rotation) {
   is_video_overlay_rotation_set_ = false;
 }
 
+
+void HelloVideoApp::saveFisheye(void* pixels) {
+    memcpy(pixels, (void *) rgba_buffer_.data(),
+           yuv_height_ * yuv_width_ * 4);
+    LOGI("HelloVideoApp: height = %d, width = %d ", yuv_height_, yuv_width_);
+    return;
+}
 }  // namespace hello_video
