@@ -89,4 +89,6 @@ public class TangoJniNative {
      * save fisheye image to file.
      */
     public static native void onSaveFisheye(Bitmap fisheye);
+
+    public static native byte[] onSaveFisheyeYUV();
 }

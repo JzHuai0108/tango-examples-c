@@ -359,4 +359,12 @@ void HelloVideoApp::saveFisheye(void* pixels) {
     LOGI("HelloVideoApp: height = %d, width = %d ", yuv_height_, yuv_width_);
     return;
 }
+
+void HelloVideoApp::getFisheyeYUV(void* pixels) {
+  std::lock_guard<std::mutex> lock(yuv_buffer_mutex_);
+  memcpy(pixels, (void *) yuv_buffer_.data(),
+         yuv_height_ * yuv_width_);
+  LOGI("HelloVideoApp: height = %d, width = %d ", yuv_height_, yuv_width_);
+  return;
+}
 }  // namespace hello_video

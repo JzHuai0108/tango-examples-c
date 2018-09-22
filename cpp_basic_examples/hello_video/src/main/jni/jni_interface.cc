@@ -102,6 +102,18 @@ Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onSaveFisheye(
   return;
 }
 
+JNIEXPORT jbyteArray JNICALL
+Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onSaveFisheyeYUV(
+        JNIEnv *env, jobject obj) {
+    int length = 640*480;
+    std::vector<jbyte> yuv_buffer_;
+    yuv_buffer_.resize(length);
+    app.getFisheyeYUV(yuv_buffer_.data());
+    jbyteArray jarrRV =env->NewByteArray(length);
+    env->SetByteArrayRegion(jarrRV, 0, length, static_cast<const jbyte*>(yuv_buffer_.data()));
+    return jarrRV;
+}
+
 #ifdef __cplusplus
 }
 #endif

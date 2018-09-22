@@ -91,6 +91,8 @@ class HelloVideoApp {
 
   void saveFisheye(void* pixels);
 
+  void getFisheyeYUV(void* pixels);
+
  private:
   // Tango configration file, this object is for configuring Tango Service setup
   // before connect to service. For example, we set the flag

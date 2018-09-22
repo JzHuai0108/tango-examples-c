@@ -20,6 +20,10 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.display.DisplayManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -33,8 +37,11 @@ import android.widget.ToggleButton;
 
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Random;
 
 /**
@@ -74,7 +81,8 @@ public class HelloVideoActivity extends Activity {
         if (displayManager != null) {
             displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
                 @Override
-                public void onDisplayAdded(int displayId) {}
+                public void onDisplayAdded(int displayId) {
+                }
 
                 @Override
                 public void onDisplayChanged(int displayId) {
@@ -84,7 +92,8 @@ public class HelloVideoActivity extends Activity {
                 }
 
                 @Override
-                public void onDisplayRemoved(int displayId) {}
+                public void onDisplayRemoved(int displayId) {
+                }
             }, null);
         }
 
@@ -122,7 +131,26 @@ public class HelloVideoActivity extends Activity {
         TangoJniNative.setYuvMethod(mYuvRenderSwitcher.isChecked());
     }
 
+    public void saveFisheyeImage() {
+        Random generator = new Random();
+        int n = 1000000;
+        n = generator.nextInt(n);
+        String fname = "/Pictures/ImageYUV-" + n + ".jpg";
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(Environment.getExternalStorageDirectory() + fname);
+            byte[] yuv = TangoJniNative.onSaveFisheyeYUV();
+            //mFisheyeImage = yuvToBitmap(yuv, 480, 640);
+            YuvImage yuvImage = new YuvImage(yuv, ImageFormat.NV21, 640, 480, null);
+            yuvImage.compressToJpeg(new Rect(0, 0, 640, 480), 100, fos);
+            fos.close();
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void saveFisheye(View view) {
+        //saveFisheyeImage();
         TangoJniNative.onSaveFisheye(mFisheyeImage);
         String root = Environment.getExternalStorageDirectory().toString();
         File myDir = new File(root + "/Pictures");
@@ -146,11 +174,32 @@ public class HelloVideoActivity extends Activity {
     }
 
     /**
-     *  Pass device rotation to native layer. This parameter is important for Tango to render video
-     *  overlay in the correct device orientation.
+     * Pass device rotation to native layer. This parameter is important for Tango to render video
+     * overlay in the correct device orientation.
      */
     private void setDisplayRotation() {
         Display display = getWindowManager().getDefaultDisplay();
         TangoJniNative.onDisplayChanged(display.getRotation());
+    }
+
+    /**
+     * yuv转bitmap
+     * @param nv21 yuv数据源
+     * @param width 图片宽度
+     * @param height 图片高度
+     * @return
+     */
+    public static Bitmap yuvToBitmap(byte[] nv21, int width, int height) {
+        Bitmap bitmap = null;
+        try {
+            YuvImage image = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            image.compressToJpeg(new Rect(0, 0, width, height), 100, stream);
+            bitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
+            stream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bitmap;
     }
 }
