@@ -91,8 +91,6 @@ class HelloVideoApp {
 
   void saveFisheye(void* pixels);
 
-  void getFisheyeYUV(void* pixels);
-
  private:
   // Tango configration file, this object is for configuring Tango Service setup
   // before connect to service. For example, we set the flag
@@ -132,7 +130,6 @@ class HelloVideoApp {
 
   SaveFisheyeFrame fisheye_frame_saver_;
   double yuv_data_timestamp_;
-
 };
 }  // namespace hello_video
 

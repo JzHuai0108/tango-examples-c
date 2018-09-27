@@ -51,7 +51,6 @@ public class HelloVideoActivity extends Activity {
     private GLSurfaceView mSurfaceView;
     private ToggleButton mYuvRenderSwitcher;
     private Button mSaveFisheyeButton;
-    private Bitmap mFisheyeImage;
     private String TAG = "HelloVideoActivity";
 
     private ServiceConnection mTangoServiceCoonnection = new ServiceConnection() {
@@ -97,7 +96,6 @@ public class HelloVideoActivity extends Activity {
             }, null);
         }
 
-
         // Configure OpenGL renderer
         mSurfaceView = (GLSurfaceView) findViewById(R.id.surfaceview);
         mSurfaceView.setEGLContextClientVersion(2);
@@ -105,7 +103,6 @@ public class HelloVideoActivity extends Activity {
 
         mYuvRenderSwitcher = (ToggleButton) findViewById(R.id.yuv_switcher);
         mSaveFisheyeButton = (Button) findViewById(R.id.save_fisheye);
-        mFisheyeImage = Bitmap.createBitmap(480, 640, Bitmap.Config.ARGB_8888);
     }
 
     @Override
@@ -131,27 +128,10 @@ public class HelloVideoActivity extends Activity {
         TangoJniNative.setYuvMethod(mYuvRenderSwitcher.isChecked());
     }
 
-    public void saveFisheyeImage() {
-        Random generator = new Random();
-        int n = 1000000;
-        n = generator.nextInt(n);
-        String fname = "/Pictures/ImageYUV-" + n + ".jpg";
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(Environment.getExternalStorageDirectory() + fname);
-            byte[] yuv = TangoJniNative.onSaveFisheyeYUV();
-            //mFisheyeImage = yuvToBitmap(yuv, 480, 640);
-            YuvImage yuvImage = new YuvImage(yuv, ImageFormat.NV21, 640, 480, null);
-            yuvImage.compressToJpeg(new Rect(0, 0, 640, 480), 100, fos);
-            fos.close();
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void saveFisheye(View view) {
-        //saveFisheyeImage();
-        TangoJniNative.onSaveFisheye(mFisheyeImage);
+        Bitmap fisheyeImage;
+        fisheyeImage = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888);
+        TangoJniNative.onSaveFisheye(fisheyeImage);
         String root = Environment.getExternalStorageDirectory().toString();
         File myDir = new File(root + "/Pictures");
         myDir.mkdirs();
@@ -160,12 +140,12 @@ public class HelloVideoActivity extends Activity {
         n = generator.nextInt(n);
         String fname = "Image-" + n + ".jpg";
         File file = new File(myDir, fname);
-        Log.i(TAG, "" + file);
+        Log.i("HelloVideoActivity", "" + file);
         if (file.exists())
             file.delete();
         try {
             FileOutputStream out = new FileOutputStream(file);
-            mFisheyeImage.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            fisheyeImage.compress(Bitmap.CompressFormat.JPEG, 100, out);
             out.flush();
             out.close();
         } catch (Exception e) {
@@ -180,26 +160,5 @@ public class HelloVideoActivity extends Activity {
     private void setDisplayRotation() {
         Display display = getWindowManager().getDefaultDisplay();
         TangoJniNative.onDisplayChanged(display.getRotation());
-    }
-
-    /**
-     * yuv转bitmap
-     * @param nv21 yuv数据源
-     * @param width 图片宽度
-     * @param height 图片高度
-     * @return
-     */
-    public static Bitmap yuvToBitmap(byte[] nv21, int width, int height) {
-        Bitmap bitmap = null;
-        try {
-            YuvImage image = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            image.compressToJpeg(new Rect(0, 0, width, height), 100, stream);
-            bitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
-            stream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bitmap;
     }
 }
