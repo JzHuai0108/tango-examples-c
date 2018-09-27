@@ -325,10 +325,12 @@ void HelloVideoApp::OnDisplayChanged(int display_rotation) {
   is_video_overlay_rotation_set_ = false;
 }
 
-void HelloVideoApp::saveFisheye(void* pixels) {
+bool HelloVideoApp::saveFisheye(void* pixels) {
+    if(!is_yuv_texture_available_)
+        return false;
     memcpy(pixels, (void *) rgba_buffer_.data(),
            yuv_height_ * yuv_width_ * 4);
     LOGI("HelloVideoApp: height = %d, width = %d ", yuv_height_, yuv_width_);
-    return;
+    return true;
 }
 }  // namespace hello_video
