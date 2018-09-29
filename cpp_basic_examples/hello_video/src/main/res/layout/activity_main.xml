@@ -27,4 +27,13 @@
         android:text="YUV"
         android:onClick="renderModeClicked" />
 
+    <Button
+        android:id="@+id/save_fisheye"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:onClick="saveFisheye"
+        android:text="saveFisheye" />
+
 </RelativeLayout>

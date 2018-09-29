@@ -17,6 +17,7 @@
 #define GLM_FORCE_RADIANS
 
 #include <jni.h>
+#include <android/bitmap.h>
 #include <hello_video/hello_video_app.h>
 
 static hello_video::HelloVideoApp app;
@@ -24,6 +25,7 @@ static hello_video::HelloVideoApp app;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 JNIEXPORT void JNICALL
 Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onCreate(
     JNIEnv* env, jobject, jobject activity) {
@@ -74,6 +76,31 @@ JNIEXPORT void JNICALL
 Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onDisplayChanged(
     JNIEnv* /*env*/, jobject /*obj*/, jint display_rotation) {
   app.OnDisplayChanged(display_rotation);
+}
+
+
+JNIEXPORT bool JNICALL
+Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onSaveFisheye(
+        JNIEnv *env, jobject obj, jobject bitmap)
+{
+  AndroidBitmapInfo  info;
+  void*              pixels;
+  int ret = 0;
+
+  if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
+    return false;
+  }
+  if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+    return false;
+  }
+
+  while ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
+  }
+
+  bool is_success = app.saveFisheye(pixels);
+
+  AndroidBitmap_unlockPixels(env, bitmap);
+  return is_success;
 }
 
 #ifdef __cplusplus

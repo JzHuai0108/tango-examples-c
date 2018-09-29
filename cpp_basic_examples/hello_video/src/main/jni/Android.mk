@@ -35,7 +35,7 @@ LOCAL_SRC_FILES := jni_interface.cc \
 LOCAL_C_INCLUDES := $(PROJECT_ROOT)/tango_gl/include \
                     $(PROJECT_ROOT)/third_party/glm
 
-LOCAL_LDLIBS    := -llog -lGLESv2 -L$(SYSROOT)/usr/lib
+LOCAL_LDLIBS    := -llog -lGLESv2 -ljnigraphics -L$(SYSROOT)/usr/lib
 include $(BUILD_SHARED_LIBRARY)
 
 $(call import-add-path, $(PROJECT_ROOT))
