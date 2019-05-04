@@ -151,7 +151,7 @@ void HelloVideoApp::OnPause() {
 void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
   int64_t local_duration = buffer->exposure_duration_ns;
   double dduration = local_duration*1e-6;
-  //LOGI("HelloVideoApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
+  LOGI("HelloVideoApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
   if (current_texture_method_ != TextureMethod::kYuv) {
     return;
   }

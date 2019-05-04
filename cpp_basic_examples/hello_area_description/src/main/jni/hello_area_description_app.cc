@@ -15,10 +15,11 @@
  */
 #include <cstdlib>
 #include <sstream>
+#include <dirent.h>
+#include <string.h>
 
 #include <tango_support.h>
 #include <tango_3d_reconstruction_api.h>
-#include <string.h>
 
 #include "hello_area_description/hello_area_description_app.h"
 
@@ -211,6 +212,98 @@ void DummyProgressCallback(int progress, void* callback_param) {
   LOGI("AreaLearningApp: Export dataset progress %d", progress);
 }
 
+void ProcessDirectory(std::string directory);
+void ProcessFile(std::string file);
+void ProcessEntity(struct dirent* entity);
+
+// dirname has no trailing "/" or  "\\"
+// return if a bag file is found
+bool ProcessEntity(struct dirent* entity, std::string dirname)
+{
+    //find entity type
+    if(entity->d_type == DT_DIR)
+    {//it's an direcotry
+        //don't process the  '..' and the '.' directories
+        if(entity->d_name[0] == '.')
+        {
+            return false;
+        }
+
+        //it's an directory so process it
+        ProcessDirectory(dirname + "/" + std::string(entity->d_name));
+        return false;
+    }
+
+    if(entity->d_type == DT_REG)
+    {//regular file
+        std::string basename = std::string(entity->d_name);
+        ProcessFile(dirname + "/" + basename);
+        return basename.compare("dataset_metadata.yaml") == 0;
+    }
+
+    //there are some other types
+    //read here http://linux.die.net/man/3/readdir
+    LOGI("Not a file or directory: %s", entity->d_name);
+    return false;
+}
+
+void ProcessFile(std::string file)
+{
+//    LOGI("Process file     : %s", file.c_str());
+
+    //if you want to do something with the file add your code here
+}
+
+// dirToOpen has no trailing "/" or "\\"
+void ProcessDirectory(std::string dirToOpen)
+{
+    auto dir = opendir(dirToOpen.c_str());
+
+    //set the new path for the content of the directory
+    std::string path = dirToOpen + "/";
+
+    LOGI("Process directory: %s", dirToOpen.c_str());
+
+    if(NULL == dir)
+    {
+        LOGI("could not open directory: %s", dirToOpen.c_str());
+        return;
+    }
+
+    auto entity = readdir(dir);
+
+    while(entity != NULL)
+    {
+        // TODO(jhuai): the saving adf function stalls in exporting the last two bag files
+        // TODO(jhuai): only export the last bag file instead of all of the found ones
+        bool hasBagFile = ProcessEntity(entity, dirToOpen);
+        if (hasBagFile) {
+            int callback_param = 0;
+            std::string output_path =  dirToOpen + "/export";
+            LOGI("AreaLearningApp: %s dirToExport %s", dirToOpen.c_str(), output_path.c_str());
+            Tango3DR_Status status = Tango3DR_extractRawDataFromDataset(
+                    dirToOpen.c_str(), output_path.c_str(),
+                    &DummyProgressCallback, &callback_param);
+
+            if (status != TANGO_3DR_SUCCESS) {
+                LOGE("AreaLearningApp: extractRawDataFromDataset failed with error code: %d", status);
+                //  std::exit(EXIT_SUCCESS);
+            } else {
+                LOGI("AreaLearningApp: Export dataset succeeded to %s", output_path.c_str());
+            }
+
+//            Tango3dReconstructionAreaDescription areaDescription =
+//              Tango3dReconstructionAreaDescription.createFromDataset(dataset, null, null);
+
+        }
+        entity = readdir(dir);
+    }
+
+    //we finished with the directory so remove it from the path
+    path.resize(path.length() - 1 - dirToOpen.length());
+    closedir(dir);
+}
+
 
 std::string AreaLearningApp::SaveAdf() {
   std::string adf_uuid_string;
@@ -232,29 +325,11 @@ std::string AreaLearningApp::SaveAdf() {
   TangoService_Experimental_getCurrentDatasetUUID(&uuid_dataset);
 
   std::string uuid_dataset_string = std::string(uuid_dataset);
-  //uuid_dataset_string = "b3b80b34-2b42-2c3d-8235-b11871fa942f";
   LOGI("AreaLearningApp: area uuid %s, dataset uuid %s", adf_uuid_string.c_str(),
           uuid_dataset_string.c_str());
 
-  std::string dataset_path = "/sdcard/temp/" + uuid_dataset_string;
-  std::string output_path = "/sdcard/temp/" + uuid_dataset_string + "/export";
-  int callback_param = 0;
-  bool export_data = true;
-  if (export_data) {
-    Tango3DR_Status status = Tango3DR_extractRawDataFromDataset(
-        dataset_path.c_str(), output_path.c_str(),
-        &DummyProgressCallback, &callback_param);
-
-    if (status != TANGO_3DR_SUCCESS) {
-      LOGE("AreaLearningApp: extractRawDataFromDataset failed with error code: %d", status);
-    //  std::exit(EXIT_SUCCESS);
-    } else {
-      LOGI("AreaLearningApp: Export dataset succeeded to %s", output_path.c_str());
-    }
-  }
-
-//  Tango3dReconstructionAreaDescription areaDescription =
-  //  Tango3dReconstructionAreaDescription.createFromDataset(dataset, null, null);
+  std::string dataset_path = "/sdcard/temp";
+  ProcessDirectory(dataset_path);
 
   return adf_uuid_string;
 }
