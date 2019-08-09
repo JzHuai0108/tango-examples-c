@@ -74,7 +74,7 @@ public class HelloVideoRenderer implements GLSurfaceView.Renderer {
     public void saveFisheyeToJpg(String filePath) {
         Bitmap fisheyeImage;
         fisheyeImage = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888);
-        if(TangoJniNative.onSaveFisheye(fisheyeImage)) {
+        if(TangoJniNative.copyRgbaToBitmap(fisheyeImage)) {
             File file = new File(filePath);
             Log.i("HelloVideoActivity", "" + file);
             if (file.exists())

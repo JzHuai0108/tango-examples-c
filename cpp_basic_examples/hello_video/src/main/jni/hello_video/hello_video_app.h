@@ -89,7 +89,7 @@ class HelloVideoApp {
   // https://developer.android.com/reference/android/view/Display.html#getRotation()
   void OnDisplayChanged(int display_rotation);
 
-  bool saveFisheye(void* pixels);
+  bool copyRgbaToOutputBuffer(void* pixels);
 
  private:
   // Tango configration file, this object is for configuring Tango Service setup

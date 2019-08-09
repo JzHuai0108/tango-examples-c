@@ -128,10 +128,10 @@ public class HelloVideoActivity extends Activity {
         TangoJniNative.setYuvMethod(mYuvRenderSwitcher.isChecked());
     }
 
-    public void saveFisheye(View view) {
+    public void saveFisheyeFrameOnClick(View view) {
         Bitmap fisheyeImage;
         fisheyeImage = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888);
-        TangoJniNative.onSaveFisheye(fisheyeImage);
+        TangoJniNative.copyRgbaToBitmap(fisheyeImage);
         String root = Environment.getExternalStorageDirectory().toString();
         File myDir = new File(root + "/Pictures");
         myDir.mkdirs();

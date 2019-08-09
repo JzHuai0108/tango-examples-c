@@ -80,7 +80,7 @@ Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onDisplayChanged(
 
 
 JNIEXPORT bool JNICALL
-Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onSaveFisheye(
+Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_copyRgbaToBitmap(
         JNIEnv *env, jobject obj, jobject bitmap)
 {
   AndroidBitmapInfo  info;
@@ -97,7 +97,7 @@ Java_com_projecttango_examples_cpp_hellovideo_TangoJniNative_onSaveFisheye(
   while ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
   }
 
-  bool is_success = app.saveFisheye(pixels);
+  bool is_success = app.copyRgbaToOutputBuffer(pixels);
 
   AndroidBitmap_unlockPixels(env, bitmap);
   return is_success;

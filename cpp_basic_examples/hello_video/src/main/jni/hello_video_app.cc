@@ -161,10 +161,11 @@ void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
     return;
   }
 
-  /*if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
-    LOGE("HelloVideoApp::yuv texture format is not supported by this app");
-    return;
-  }*/
+  if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
+    LOGE("HelloVideoApp: buffer format 0x%x, note yuv_420_888(0x23) "
+                 "texture format is not supported well by this app", buffer->format);
+  }
+
 
   // The memory needs to be allocated after we get the first frame because we
   // need to know the size of the image.
@@ -325,7 +326,7 @@ void HelloVideoApp::OnDisplayChanged(int display_rotation) {
   is_video_overlay_rotation_set_ = false;
 }
 
-bool HelloVideoApp::saveFisheye(void* pixels) {
+bool HelloVideoApp::copyRgbaToOutputBuffer(void* pixels) {
     if(!is_yuv_texture_available_)
         return false;
     memcpy(pixels, (void *) rgba_buffer_.data(),
