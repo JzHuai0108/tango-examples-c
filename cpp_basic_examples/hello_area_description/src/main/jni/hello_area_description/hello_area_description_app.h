@@ -34,6 +34,9 @@
 
 namespace hello_area_description {
 
+static const std::string kOutputDir = "/sdcard/tango";
+static const std::string kExportBasename = "export";
+
 // AreaLearningApp handles the application lifecycle and resources.
 class AreaLearningApp {
  public:

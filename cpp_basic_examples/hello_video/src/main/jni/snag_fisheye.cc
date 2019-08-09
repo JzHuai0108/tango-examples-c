@@ -9,14 +9,15 @@ namespace hello_video {
 SaveFisheyeFrame::SaveFisheyeFrame() : yuv_buffer_(nullptr) {
 }
 
-void SaveFisheyeFrame::Initialize(const TangoImageBuffer* buffer) {
+void SaveFisheyeFrame::Initialize(const TangoImageBuffer* buffer,
+                                  const std::string& output_dir) {
    LOGI("HelloVideoApp::buffer format %d h %d w %d stride %d expo_duration %lld",
         buffer->format, buffer->height, buffer->width, buffer->stride,
         buffer->exposure_duration_ns);
    yuv_width_ = buffer->width;
    yuv_height_ = buffer->height;
    frame_count_ = 0;
-   save_path_ = "/sdcard/temp"; //TODO(jhuai): the user needs to make sure this path exists
+   save_path_ = output_dir;
 }
 
 bool SaveFisheyeFrame::SaveFrame() {

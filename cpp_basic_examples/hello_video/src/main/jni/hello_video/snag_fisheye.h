@@ -18,7 +18,9 @@ class SaveFisheyeFrame {
 
   SaveFisheyeFrame();
 
-  void Initialize(const TangoImageBuffer* buffer);
+  void Initialize(
+      const TangoImageBuffer* buffer,
+      const std::string& output_dir);
 
   bool SaveFrame();
 

@@ -67,8 +67,8 @@ public class StartActivity extends Activity {
     private long mStartTimestamp;
     private static final float NS2S = 1.0f / 1000000000.0f;
 
-    public int accel_count;
-    public int gyro_count;
+    public int accel_count = 1;
+    public int gyro_count = 1;
     public long accel_interval;
     public long gyro_interval;
 

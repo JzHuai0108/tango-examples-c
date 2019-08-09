@@ -41,12 +41,20 @@ public class HelloVideoRenderer implements GLSurfaceView.Renderer {
     private String path = Environment.getExternalStorageDirectory().getAbsolutePath()
             + File.separator + "fisheye" + File.separator + strDate;
     private int img_cnt = 0;
-
+    private long lastTimeMills = 0;
+    private float frameRate = 15.f;
     // Render loop of the Gl context.
     public void onDrawFrame(GL10 gl) {
         TangoJniNative.onGlSurfaceDrawFrame();
+        long presentTime = System.currentTimeMillis();
+
         img_cnt = img_cnt + 1;
-        saveFisheyeToJpg(path + File.separator + img_cnt + ".jpg");
+        if (lastTimeMills != 0) {
+            frameRate = frameRate * 0.3f + 0.7f * 1000.f / (presentTime - lastTimeMills);
+            Log.d("HelloVideoRenderer", "image rate " + frameRate);
+        }
+        lastTimeMills = presentTime;
+        saveFisheyeToJpg(path + File.separator + presentTime + "000000.jpg");
     }
 
     // Called when the surface size changes.
