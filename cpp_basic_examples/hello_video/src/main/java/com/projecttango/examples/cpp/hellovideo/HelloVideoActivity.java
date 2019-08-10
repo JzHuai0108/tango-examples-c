@@ -20,10 +20,6 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
-import android.graphics.Rect;
-import android.graphics.YuvImage;
 import android.hardware.display.DisplayManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -37,11 +33,8 @@ import android.widget.ToggleButton;
 
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Random;
 
 /**
@@ -52,6 +45,7 @@ public class HelloVideoActivity extends Activity {
     private ToggleButton mYuvRenderSwitcher;
     private Button mSaveFisheyeButton;
     private String TAG = "HelloVideoActivity";
+    private static edu.osu.pcv.marslogger.IMUManager mImuManager;
 
     private ServiceConnection mTangoServiceCoonnection = new ServiceConnection() {
         @Override
@@ -74,7 +68,7 @@ public class HelloVideoActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         TangoJniNative.onCreate(this);
-
+        mImuManager = new edu.osu.pcv.marslogger.IMUManager(this);
         // Register for display orientation change updates.
         DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
         if (displayManager != null) {
@@ -111,6 +105,7 @@ public class HelloVideoActivity extends Activity {
         mSurfaceView.onResume();
         TangoInitializationHelper.bindTangoService(this, mTangoServiceCoonnection);
         TangoJniNative.setYuvMethod(mYuvRenderSwitcher.isChecked());
+        mImuManager.register();
     }
 
     @Override
@@ -119,6 +114,7 @@ public class HelloVideoActivity extends Activity {
         mSurfaceView.onPause();
         TangoJniNative.onPause();
         unbindService(mTangoServiceCoonnection);
+        mImuManager.unregister();
     }
 
     /**

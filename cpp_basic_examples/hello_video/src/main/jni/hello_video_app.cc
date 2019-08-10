@@ -188,7 +188,6 @@ void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
 
   std::lock_guard<std::mutex> lock(yuv_buffer_mutex_);
   memcpy(&yuv_temp_buffer_[0], buffer->data, yuv_size_);
-//  convertYUVToRGBA();
   swap_buffer_signal_ = true;
 }
 
@@ -293,10 +292,10 @@ void HelloVideoApp::RenderYuv() {
           yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index],
           &rgb_buffer_[rgb_index], &rgb_buffer_[rgb_index + 1],
           &rgb_buffer_[rgb_index + 2]);
-        rgba_buffer_[rgba_index] = rgb_buffer_[rgb_index];
-        rgba_buffer_[rgba_index + 1] = rgb_buffer_[rgb_index + 1];
-        rgba_buffer_[rgba_index + 2] = rgb_buffer_[rgb_index + 2];
-        rgba_buffer_[rgba_index + 3] = 1;
+//        rgba_buffer_[rgba_index] = rgb_buffer_[rgb_index];
+//        rgba_buffer_[rgba_index + 1] = rgb_buffer_[rgb_index + 1];
+//        rgba_buffer_[rgba_index + 2] = rgb_buffer_[rgb_index + 2];
+//        rgba_buffer_[rgba_index + 3] = 1;
     }
   }
 

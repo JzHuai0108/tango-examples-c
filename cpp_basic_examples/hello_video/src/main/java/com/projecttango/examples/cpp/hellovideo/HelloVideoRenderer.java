@@ -54,7 +54,7 @@ public class HelloVideoRenderer implements GLSurfaceView.Renderer {
             Log.d("HelloVideoRenderer", "image rate " + frameRate);
         }
         lastTimeMills = presentTime;
-        saveFisheyeToJpg(path + File.separator + presentTime + "000000.jpg");
+//        saveFisheyeToJpg(path + File.separator + presentTime + "000000.jpg");
     }
 
     // Called when the surface size changes.
