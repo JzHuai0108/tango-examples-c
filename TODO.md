@@ -29,9 +29,12 @@ each for visualization, bag recording and exporting, and accelerometer and gyro 
 The major job is to piece the three together. And it is expected not to take long.
 
 4. Hello video + opencv imwrite
-The saving frame rate will not be high, say 20Hz.
+The saving frame rate will not be high, say 20Hz. 
+It is so difficult to use opencv in jni c++ code.
+Even we may use opencv function to convert the byte buffer to a gray scale image, 
+it is still a pain in saving the gray image because of limited support by android.
 
-Out of three plans, 1 < 4 < 3 < 2 in order of complexity.
+Out of three plans, 1 < 3 < 2 < 4 in order of complexity.
 
 * How tango ros streamer set message timestamps?
 IMU messages: ConnectedNode mConnectedNode.getCurrentTime()
