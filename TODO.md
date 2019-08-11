@@ -22,7 +22,9 @@ It would be time consuming to add a heavy mediaencoder though.
 关闭         >  开启
 kTextureId  >  kYuv
 
-Is the saved fisheye frame original?
+Is the saved fisheye frame original? 
+Better follow the coding practice in Tango Ros streamer to 
+ensure the quality of the saved fisheye frames.
 
 3. Hello Video + Hello area description + IMU sensor event listener
 each for visualization, bag recording and exporting, and accelerometer and gyro recording
@@ -34,7 +36,6 @@ It is so difficult to use opencv in jni c++ code.
 Even we may use opencv function to convert the byte buffer to a gray scale image, 
 it is still a pain in saving the gray image because of limited support by android.
 
-Out of three plans, 1 < 3 < 2 < 4 in order of complexity.
 
 * How tango ros streamer set message timestamps?
 IMU messages: ConnectedNode mConnectedNode.getCurrentTime()
@@ -52,3 +53,6 @@ color_image_header_.stamp.fromSec(buffer->timestamp + time_offset_);
 * How does tango ros streamer obtain the raw fisheye frame?
 see https://github.com/Intermodalics/tango_ros/blob/c0904da44b691670c8ed5e0916bf346ae16edd73/tango_ros_common/tango_ros_native/src/tango_ros_nodelet.cpp
 The basic idea is similar to hello_video
+
+
+Out of three plans, 1 < 3 < 2 < 4 in order of complexity.

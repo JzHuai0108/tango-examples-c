@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <sys/time.h>
 
 #include <cstdlib>
 #include <sstream>
@@ -22,6 +21,7 @@
 
 #include <tango_support.h>
 #include <tango_3d_reconstruction_api.h>
+#include <hello_area_description/mini_timer.h>
 
 #include "hello_area_description/hello_area_description_app.h"
 
@@ -293,37 +293,13 @@ void ExportBagToRawFiles(std::string dirToOpen) {
 //      Tango3dReconstructionAreaDescription.createFromDataset(dataset, null, null);
 }
 
-namespace {
-class Timer {
-  struct timeval start_, end_;
- public:
-  Timer() {
-    // start timer.
-    gettimeofday(&start_, NULL);
-  }
-  void tic() {
-    // reset timer.
-    gettimeofday(&start_, NULL);
-  }
-  double toc() {
-    // stop timer.
-    gettimeofday(&end_, NULL);
-
-    // Calculating total time taken by the program.
-    double time_taken =
-        (end_.tv_sec - start_.tv_sec) +
-        (end_.tv_usec - start_.tv_usec) * 1e-6;
-    return time_taken;
-  }
-};
-}
 
 std::string AreaLearningApp::SaveAdf() {
   std::string adf_uuid_string;
 //  if (!pose_data_.IsRelocalized()) {
 //    return adf_uuid_string;
 //  }
-  Timer saveAdfTime;
+  timing::Timer saveAdfTime;
   TangoUUID uuid;
   int ret = TangoService_saveAreaDescription(&uuid);
   if (ret == TANGO_SUCCESS) {
