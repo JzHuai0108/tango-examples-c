@@ -23,20 +23,16 @@
 #include <vector>
 #include <android/log.h>
 
-#define LOGI(...) \
-  __android_log_print(ANDROID_LOG_INFO, "hello_area_description", __VA_ARGS__)
-#define LOGE(...) \
-  __android_log_print(ANDROID_LOG_ERROR, "hello_area_description", __VA_ARGS__)
-
 #include <tango_client_api.h>  // NOLINT
-
+#include <tango-gl/util.h>
+#include <tango-gl/video_overlay.h>
 #include <hello_area_description/pose_data.h>
 
 namespace hello_area_description {
 
 static const std::string kOutputDir = "/sdcard/tango";
 static const std::string kExportBasename = "export";
-
+const TangoCameraId CAMERA_OF_INTEREST = TANGO_CAMERA_FISHEYE;
 // AreaLearningApp handles the application lifecycle and resources.
 class AreaLearningApp {
  public:
@@ -75,10 +71,22 @@ class AreaLearningApp {
   // Tango Service.
   void OnPause();
 
+  // Initializing the Scene.
+  void OnSurfaceCreated();
+
+  // Setup the view port width and height.
+  void OnSurfaceChanged(int width, int height);
+
+  // Main render loop.
+  void OnDrawFrame();
+
   // When the Android activity is destroyed, signal the JNI layer to remove
   // references to the activity. This should be called from the onDestroy()
   // callback of the parent activity lifecycle.
   void OnDestroy();
+
+  // YUV data callback.
+  void OnFrameAvailable(const TangoImageBuffer* buffer);
 
   // Save current ADF in learning mode. Note that the save function only works
   // when learning mode is on.
@@ -171,6 +179,34 @@ class AreaLearningApp {
   JavaVM* java_vm_;
   jobject calling_activity_obj_;
   jmethodID on_saving_adf_progress_updated_;
+
+  // video_overlay_ Render the camera video feedback onto the screen.
+  tango_gl::VideoOverlay* video_overlay_drawable_;
+  tango_gl::VideoOverlay* yuv_drawable_;
+
+  std::vector<uint8_t> yuv_buffer_;
+  std::vector<uint8_t> yuv_temp_buffer_;
+  std::vector<GLubyte> rgb_buffer_;
+
+  std::atomic<bool> is_yuv_texture_available_;
+  std::atomic<bool> swap_buffer_signal_;
+  std::mutex yuv_buffer_mutex_;
+
+  size_t yuv_width_;
+  size_t yuv_height_;
+  size_t yuv_size_;
+  size_t uv_buffer_offset_;
+
+  bool is_service_connected_;
+  bool is_texture_id_set_;
+  bool is_video_overlay_rotation_set_;
+
+  TangoSupport_Rotation display_rotation_;
+
+  void AllocateTexture(GLuint texture_id, int width, int height);
+  void RenderYuv();
+  void RenderTextureId();
+  void DeleteDrawables();
 };
 }  // namespace hello_area_description
 

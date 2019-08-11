@@ -97,4 +97,19 @@ public class TangoJniNative {
    * Delete a ADF from Tango space.
    */
   public static native void deleteAdf(String uuid);
+
+  /**
+   * Delegate {@code GLSurfaceView.onGlSurfaceCreated} to the native code code.
+   */
+  public static native void onGlSurfaceCreated();
+
+  /**
+   * Delegate {@code GLSurfaceView.onGlSurfaceChanged} to the native code code.
+   */
+  public static native void onGlSurfaceChanged(int width, int height);
+
+  /**
+   * Delegate {@code GLSurfaceView.onGlSurfaceDrawFrame} to the native code code.
+   */
+  public static native void onGlSurfaceDrawFrame();
 }

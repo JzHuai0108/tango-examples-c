@@ -22,7 +22,9 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Point;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -30,8 +32,9 @@ import android.view.Display;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
+
+import java.io.File;
 
 /**
  * This activity is called after the user selects the area description configuration in the
@@ -47,6 +50,13 @@ public class AreaDescriptionActivity extends Activity implements
       SetAdfNameDialog.CallbackListener, SaveAdfTask.SaveAdfListener {
   // Tag for debug logging.
   private static final String TAG = AreaDescriptionActivity.class.getSimpleName();
+  private final String tangoOutputDir =
+      Environment.getExternalStorageDirectory().getAbsolutePath()
+      + File.separator + "tango";
+  private final String captureResultFile =
+      tangoOutputDir + File.separator + "gyro_accel.csv";
+  private GLSurfaceView mSurfaceView;
+  private static IMUManager mImuManager;
 
   // The interval at which we'll update our UI debug text in milliseconds.
   // This is the rate at which we query our native wrapper around the tango
@@ -76,6 +86,9 @@ public class AreaDescriptionActivity extends Activity implements
       public void onServiceConnected(ComponentName name, IBinder service) {
         TangoJniNative.onTangoServiceConnected(service, mIsAreaLearningEnabled,
                                                mIsLoadingAreaDescription);
+        if (mIsAreaLearningEnabled) {
+          mImuManager.startRecording(captureResultFile);
+        }
         // Display loaded ADF's UUID.
         runOnUiThread(new Runnable() {
           @Override
@@ -97,25 +110,31 @@ public class AreaDescriptionActivity extends Activity implements
     queryDataFromStartActivity();
     setupUiComponents();
     TangoJniNative.onCreate(this);
+
+    mImuManager = new IMUManager(this);
   }
 
   @Override
   protected void onResume() {
     super.onResume();
-
+    mSurfaceView.onResume();
     // Start the debug text UI update loop.
     mHandler.post(mUpdateUiLoopRunnable);
 
     TangoInitializationHelper.bindTangoService(this, mTangoServiceConnection);
+    mImuManager.register();
   }
 
   @Override
   protected void onPause() {
     super.onPause();
+    mSurfaceView.onPause();
     TangoJniNative.onPause();
     unbindService(mTangoServiceConnection);
     // Stop the debug text UI update loop.
     mHandler.removeCallbacksAndMessages(null);
+
+    mImuManager.unregister();
   }
 
   @Override
@@ -167,16 +186,24 @@ public class AreaDescriptionActivity extends Activity implements
                       adfName);
     Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     mSaveAdfTask = null;
+    if (mIsAreaLearningEnabled) {
+      mImuManager.stopRecording();
+    }
   }
 
   /**
    * Handles successful save from mSaveAdfTask.
    */
   @Override
-  public void onSaveAdfSuccess(String adfName, String adfUuid) {
+  public void onSaveAdfSuccess(String adfName, String adf_dataset_uuid) {
     String toastMessage =
         String.format(getResources().getString(R.string.save_adf_success_toast_format),
-                      adfName, adfUuid);
+                      adfName, adf_dataset_uuid.substring(0, SaveAdfTask.uuid_len));
+    if (mIsAreaLearningEnabled) {
+      mImuManager.stopRecording();
+      renameInertialDataFile(
+          adf_dataset_uuid.substring(SaveAdfTask.uuid_len, SaveAdfTask.uuid_len*2));
+    }
     Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     mSaveAdfTask = null;
     finish();
@@ -215,6 +242,11 @@ public class AreaDescriptionActivity extends Activity implements
     // Querying screen size, used for computing the normalized touch point.
     Display display = getWindowManager().getDefaultDisplay();
     display.getSize(mScreenSize);
+
+    // Configure OpenGL renderer
+    mSurfaceView = (GLSurfaceView) findViewById(R.id.surfaceview);
+    mSurfaceView.setEGLContextClientVersion(2);
+    mSurfaceView.setRenderer(new HelloVideoRenderer());
 
     mAdfUuidTextView = (TextView) findViewById(R.id.adf_uuid_textview);
     mRelocalizationTextView = (TextView) findViewById(R.id.relocalization_textview);
@@ -262,6 +294,20 @@ public class AreaDescriptionActivity extends Activity implements
       }
     } catch (Exception e) {
       Log.e(TAG, "Exception updating UI", e);
+    }
+  }
+
+  private void renameInertialDataFile(String adfUuid) {
+    File file = new File(captureResultFile);
+    // renaming the file and moving it to a new location
+    String dest = tangoOutputDir + File.separator + adfUuid +
+        File.separator + "export" + File.separator + "gyro_accel.csv";
+
+    if(file.renameTo(new File(dest))) {
+      // if file copied successfully then delete the original file
+      file.delete();
+    } else {
+      Log.e(TAG, "Failed to move inertial data to " + dest);
     }
   }
 }

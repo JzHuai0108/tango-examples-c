@@ -23,13 +23,15 @@ import android.os.AsyncTask;
  * Saves the ADF on a background thread and shows a progress dialog while saving.
  */
 public class SaveAdfTask extends AsyncTask<Void, Integer, String> {
-
+    public static final int uuid_len = 36;
+    public static final String uuid_mask =
+        new String(new char[uuid_len]).replace("\0", "0");
     /**
      * Listener to check if save ADF is successed.
      */
     public interface SaveAdfListener {
         void onSaveAdfFailed(String adfName);
-        void onSaveAdfSuccess(String adfName, String adfUuid);
+        void onSaveAdfSuccess(String adfName, String adf_dataset_uuid);
     }
 
     Context mContext;
@@ -68,11 +70,12 @@ public class SaveAdfTask extends AsyncTask<Void, Integer, String> {
     @Override
     protected String doInBackground(Void... params) {
         // This example implementation returns an empty-string on failure.
-        String adfUuid = TangoJniNative.saveAdf();
-        if (!adfUuid.isEmpty()) {
-            TangoJniNative.setAdfMetadataValue(adfUuid, "name", mAdfName);
+        String adf_dataset_uuid = TangoJniNative.saveAdf();
+        if (!adf_dataset_uuid.startsWith(uuid_mask)) {
+            TangoJniNative.setAdfMetadataValue(
+                adf_dataset_uuid.substring(0, uuid_len), "name", mAdfName);
         }
-        return adfUuid;
+        return adf_dataset_uuid;
     }
 
     /**
@@ -89,15 +92,15 @@ public class SaveAdfTask extends AsyncTask<Void, Integer, String> {
      * Dismisses the progress dialog and call the activity.
      */
     @Override
-    protected void onPostExecute(String adfUuid) {
+    protected void onPostExecute(String adf_dataset_uuid) {
         if (mProgressDialog != null) {
             mProgressDialog.dismiss();
         }
         if (mCallbackListener != null) {
-            if (adfUuid.isEmpty()) {
+            if (adf_dataset_uuid.startsWith(uuid_mask)) {
                 mCallbackListener.onSaveAdfFailed(mAdfName);
             } else {
-                mCallbackListener.onSaveAdfSuccess(mAdfName, adfUuid);
+                mCallbackListener.onSaveAdfSuccess(mAdfName, adf_dataset_uuid);
             }
         }
     }

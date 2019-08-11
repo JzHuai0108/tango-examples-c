@@ -105,6 +105,25 @@ Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_deleteAdf
   return app.DeleteAdf(uuid_str);
 }
 
+
+JNIEXPORT void JNICALL
+Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_onGlSurfaceCreated(
+        JNIEnv*, jobject) {
+  app.OnSurfaceCreated();
+}
+
+JNIEXPORT void JNICALL
+Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_onGlSurfaceChanged(
+        JNIEnv*, jobject, jint width, jint height) {
+  app.OnSurfaceChanged(width, height);
+}
+
+JNIEXPORT void JNICALL
+Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_onGlSurfaceDrawFrame(
+        JNIEnv*, jobject) {
+  app.OnDrawFrame();
+}
+
 #ifdef __cplusplus
 }
 #endif

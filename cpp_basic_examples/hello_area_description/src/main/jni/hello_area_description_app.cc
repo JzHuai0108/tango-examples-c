@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sys/time.h>
+
 #include <cstdlib>
 #include <sstream>
 #include <dirent.h>
@@ -27,6 +29,32 @@ namespace {
 // The minimum Tango Core version required from this application.
 constexpr int kTangoCoreMinimumVersion = 9377;
 const int kVersionStringLength = 128;
+void OnFrameAvailableRouter(void* context, TangoCameraId,
+                            const TangoImageBuffer* buffer) {
+    hello_area_description::AreaLearningApp* app =
+            static_cast<hello_area_description::AreaLearningApp*>(context);
+    app->OnFrameAvailable(buffer);
+}
+
+// We could do this conversion in a fragment shader if all we care about is
+// rendering, but we show it here as an example of how people can use RGB data
+// on the CPU.
+inline void Yuv2Rgb(uint8_t y_value, uint8_t u_value, uint8_t v_value,
+                    uint8_t* r, uint8_t* g, uint8_t* b) {
+  float float_r = y_value + (1.370705 * (v_value - 128));
+  float float_g =
+          y_value - (0.698001 * (v_value - 128)) - (0.337633 * (u_value - 128));
+  float float_b = y_value + (1.732446 * (u_value - 128));
+
+  float_r = float_r * !(float_r < 0);
+  float_g = float_g * !(float_g < 0);
+  float_b = float_b * !(float_b < 0);
+
+  *r = float_r * (!(float_r > 255)) + 255 * (float_r > 255);
+  *g = float_g * (!(float_g > 255)) + 255 * (float_g > 255);
+  *b = float_b * (!(float_b > 255)) + 255 * (float_b > 255);
+}
+
 
 // This function routes onPoseAvailable callbacks to the application object for
 // handling.
@@ -73,6 +101,15 @@ void AreaLearningApp::OnCreate(JNIEnv* env, jobject caller_activity) {
       env->GetMethodID(cls, "updateSavingAdfProgress", "(I)V");
 
   calling_activity_obj_ = env->NewGlobalRef(caller_activity);
+
+  // Initialize variables
+  is_yuv_texture_available_ = false;
+  swap_buffer_signal_ = false;
+  is_service_connected_ = false;
+  is_texture_id_set_ = false;
+  video_overlay_drawable_ = NULL;
+  yuv_drawable_ = NULL;
+  is_video_overlay_rotation_set_ = false;
 }
 
 void AreaLearningApp::OnTangoServiceConnected(
@@ -173,7 +210,15 @@ void AreaLearningApp::OnTangoServiceConnected(
           ret);
       std::exit(EXIT_SUCCESS);
     }
-
+    ret = TangoService_connectOnFrameAvailable(CAMERA_OF_INTEREST, this,
+                                               OnFrameAvailableRouter);
+    if (ret != TANGO_SUCCESS) {
+        LOGE(
+                "AreaLearningApp::OnTangoServiceConnected,"
+                        "Error connecting color frame %d",
+                ret);
+        std::exit(EXIT_SUCCESS);
+    }
     // Connect to the Tango Service, the service will start running:
     // point clouds can be queried and callbacks will be called.
     ret = TangoService_connect(this, tango_config_);
@@ -184,6 +229,11 @@ void AreaLearningApp::OnTangoServiceConnected(
           ret);
       std::exit(EXIT_SUCCESS);
     }
+    // Initialize TangoSupport context.
+    TangoSupport_initialize(TangoService_getPoseAtTime,
+                            TangoService_getCameraIntrinsics);
+
+    is_service_connected_ = true;
   }
 }
 
@@ -206,6 +256,18 @@ void AreaLearningApp::OnPause() {
   TangoConfig_free(tango_config_);
   tango_config_ = nullptr;
   TangoService_disconnect();
+
+
+  // Free buffer data
+  is_yuv_texture_available_ = false;
+  swap_buffer_signal_ = false;
+  is_service_connected_ = false;
+  is_video_overlay_rotation_set_ = false;
+  is_texture_id_set_ = false;
+  rgb_buffer_.clear();
+  yuv_buffer_.clear();
+  yuv_temp_buffer_.clear();
+  this->DeleteDrawables();
 }
 
 void DummyProgressCallback(int progress, void* callback_param) {
@@ -213,67 +275,47 @@ void DummyProgressCallback(int progress, void* callback_param) {
 }
 
 void ExportBagToRawFiles(std::string dirToOpen) {
-    int callback_param = 0;
-    std::string output_path = dirToOpen + "/" + kExportBasename;
-    LOGI("AreaLearningApp: %s dirToExport %s", dirToOpen.c_str(), output_path.c_str());
-    Tango3DR_Status status = Tango3DR_extractRawDataFromDataset(
-            dirToOpen.c_str(), output_path.c_str(),
-            &DummyProgressCallback, &callback_param);
+  int callback_param = 0;
+  std::string output_path = dirToOpen + "/" + kExportBasename;
+  LOGI("AreaLearningApp: %s dirToExport %s", dirToOpen.c_str(), output_path.c_str());
+  Tango3DR_Status status = Tango3DR_extractRawDataFromDataset(
+          dirToOpen.c_str(), output_path.c_str(),
+          &DummyProgressCallback, &callback_param);
 
-    if (status != TANGO_3DR_SUCCESS) {
-        LOGE("AreaLearningApp: extractRawDataFromDataset failed with error code: %d", status);
-        //  std::exit(EXIT_SUCCESS);
-    } else {
-        LOGI("AreaLearningApp: Export dataset succeeded to %s", output_path.c_str());
-    }
+  if (status != TANGO_3DR_SUCCESS) {
+      LOGE("AreaLearningApp: Exporting dataset failed with error code: %d", status);
+      //  std::exit(EXIT_SUCCESS);
+  } else {
+      LOGI("AreaLearningApp: Exporting dataset succeeded to %s", output_path.c_str());
+  }
 
-//    Tango3dReconstructionAreaDescription areaDescription =
-//            Tango3dReconstructionAreaDescription.createFromDataset(dataset, null, null);
+//  Tango3dReconstructionAreaDescription areaDescription =
+//      Tango3dReconstructionAreaDescription.createFromDataset(dataset, null, null);
 }
 
-// dirToOpen has no trailing "/" or "\\"
-// if depth <= 0, will not check the subdirs of dirToOpen
-void ProcessDirectory(std::string dirToOpen, int depth) {
-    auto dir = opendir(dirToOpen.c_str());
-    LOGI("Processing directory: %s", dirToOpen.c_str());
-    if (NULL == dir) {
-        LOGI("could not open directory: %s", dirToOpen.c_str());
-        return;
-    }
+namespace {
+class Timer {
+  struct timeval start_, end_;
+ public:
+  Timer() {
+    // start timer.
+    gettimeofday(&start_, NULL);
+  }
+  void tic() {
+    // reset timer.
+    gettimeofday(&start_, NULL);
+  }
+  double toc() {
+    // stop timer.
+    gettimeofday(&end_, NULL);
 
-    auto entity = readdir(dir);
-    bool hasBagFile = false;
-    bool hasMetadataYaml = false;
-    bool hasExported = false;
-    std::vector<std::string> dirsToExport;
-    while (entity != NULL) {
-        if (entity->d_type == DT_REG) {
-            // regular file
-            std::string basename = std::string(entity->d_name);
-            if (basename.compare("dataset_metadata.yaml") == 0) {
-                hasMetadataYaml = true;
-            }
-        }
-        if (entity->d_type == DT_DIR) { // it's an direcotry
-            std::string basename = std::string(entity->d_name);
-            //don't process the  '..' and the '.' directories
-            if(basename[0] == '.') {
-
-            } else if (basename.compare("bag") == 0) {
-                hasBagFile = true;
-            } else if (basename.compare("export") == 0) {
-                hasExported = true;
-            } else if (depth > 0) {
-                ProcessDirectory(dirToOpen + "/" + std::string(entity->d_name), depth - 1);
-            }
-        }
-        if (hasBagFile && hasMetadataYaml && !hasExported) {
-            ExportBagToRawFiles(dirToOpen);
-        }
-        entity = readdir(dir);
-    }
-
-    closedir(dir);
+    // Calculating total time taken by the program.
+    double time_taken =
+        (end_.tv_sec - start_.tv_sec) +
+        (end_.tv_usec - start_.tv_usec) * 1e-6;
+    return time_taken;
+  }
+};
 }
 
 std::string AreaLearningApp::SaveAdf() {
@@ -281,6 +323,7 @@ std::string AreaLearningApp::SaveAdf() {
 //  if (!pose_data_.IsRelocalized()) {
 //    return adf_uuid_string;
 //  }
+  Timer saveAdfTime;
   TangoUUID uuid;
   int ret = TangoService_saveAreaDescription(&uuid);
   if (ret == TANGO_SUCCESS) {
@@ -291,17 +334,24 @@ std::string AreaLearningApp::SaveAdf() {
     // construct a string from it!
     LOGE("AreaLearningApp: Failed to save ADF with error code: %d", ret);
   }
+  double elapsed = saveAdfTime.toc();
+  LOGI("AreaLearningApp: Saving ADF takes %.7f s", elapsed);
 
   TangoUUID uuid_dataset;
   TangoService_Experimental_getCurrentDatasetUUID(&uuid_dataset);
 
   std::string uuid_dataset_string = std::string(uuid_dataset);
-  LOGI("AreaLearningApp: area uuid %s, dataset uuid %s", adf_uuid_string.c_str(),
+  LOGI("AreaLearningApp: adf uuid %s, dataset string %s", adf_uuid_string.c_str(),
           uuid_dataset_string.c_str());
-  const int depthToCheck = 1;
-  ProcessDirectory(kOutputDir, depthToCheck);
-
-  return adf_uuid_string;
+  saveAdfTime.tic();
+  ExportBagToRawFiles(kOutputDir + "/" + uuid_dataset_string.c_str());
+  elapsed = saveAdfTime.toc();
+  LOGI("AreaLearningApp: Exporting tango raw data takes %.7f s", elapsed);
+  if (adf_uuid_string.empty()) {
+    adf_uuid_string = std::string(36, '0');
+  }
+  // uuid_dataset_string.empty() should not happen as it is a dir for saving data
+  return adf_uuid_string + uuid_dataset_string;
 }
 
 std::string AreaLearningApp::GetAdfMetadataValue(const std::string& uuid,
@@ -416,4 +466,159 @@ void AreaLearningApp::OnAdfSavingProgressChanged(int progress) {
                       progress);
 }
 
+void AreaLearningApp::OnFrameAvailable(const TangoImageBuffer *buffer) {
+  int64_t local_duration = buffer->exposure_duration_ns;
+  double dduration = local_duration * 1e-6;
+  LOGI("AreaLearningApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
+
+  if (yuv_drawable_ == NULL || yuv_drawable_->GetTextureId() == 0) {
+    LOGE("AreaLearningApp::yuv texture id not valid");
+    return;
+  }
+
+  if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
+    LOGE("AreaLearningApp: buffer format 0x%x, note yuv_420_888(0x23) "
+             "texture format is not supported well by this app", buffer->format);
+  }
+
+
+  // The memory needs to be allocated after we get the first frame because we
+  // need to know the size of the image.
+  if (!is_yuv_texture_available_) {
+    yuv_width_ = buffer->width;
+    yuv_height_ = buffer->height;
+    uv_buffer_offset_ = yuv_width_ * yuv_height_;
+
+    yuv_size_ = yuv_width_ * yuv_height_ + yuv_width_ * yuv_height_ / 2;
+
+    // Reserve and resize the buffer size for RGB and YUV data.
+    yuv_buffer_.resize(yuv_size_);
+    yuv_temp_buffer_.resize(yuv_size_);
+    rgb_buffer_.resize(yuv_width_ * yuv_height_ * 3);
+
+    AllocateTexture(yuv_drawable_->GetTextureId(), yuv_width_, yuv_height_);
+    is_yuv_texture_available_ = true;
+  }
+
+  std::lock_guard<std::mutex> lock(yuv_buffer_mutex_);
+  memcpy(&yuv_temp_buffer_[0], buffer->data, yuv_size_);
+  swap_buffer_signal_ = true;
+}
+
+void AreaLearningApp::DeleteDrawables() {
+  delete video_overlay_drawable_;
+  delete yuv_drawable_;
+  video_overlay_drawable_ = NULL;
+  yuv_drawable_ = NULL;
+}
+
+void AreaLearningApp::OnSurfaceCreated() {
+  if (video_overlay_drawable_ != NULL || yuv_drawable_ != NULL) {
+    this->DeleteDrawables();
+  }
+
+  video_overlay_drawable_ =
+      new tango_gl::VideoOverlay(GL_TEXTURE_EXTERNAL_OES, TANGO_SUPPORT_ROTATION_180);
+  yuv_drawable_ = new tango_gl::VideoOverlay(GL_TEXTURE_2D, TANGO_SUPPORT_ROTATION_180);
+}
+
+void AreaLearningApp::OnSurfaceChanged(int width, int height) {
+  glViewport(0, 0, width, height);
+}
+
+void AreaLearningApp::OnDrawFrame() {
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+  if (!is_service_connected_) {
+    return;
+  }
+
+  if (!is_texture_id_set_) {
+    is_texture_id_set_ = true;
+    // Connect color camera texture. TangoService_connectTextureId expects a
+    // valid texture id from the caller, so we will need to wait until the GL
+    // content is properly allocated.
+    int texture_id = static_cast<int>(video_overlay_drawable_->GetTextureId());
+    TangoErrorType ret = TangoService_connectTextureId(
+        CAMERA_OF_INTEREST, texture_id, nullptr, nullptr);
+    if (ret != TANGO_SUCCESS) {
+      LOGE(
+          "AreaLearningApp: Failed to connect the texture id with error"
+              "code: %d",
+          ret);
+    }
+  }
+
+  if (!is_video_overlay_rotation_set_) {
+    video_overlay_drawable_->SetDisplayRotation(TANGO_SUPPORT_ROTATION_180);
+    yuv_drawable_->SetDisplayRotation(TANGO_SUPPORT_ROTATION_180);
+    is_video_overlay_rotation_set_ = true;
+  }
+  RenderYuv();
+}
+
+void AreaLearningApp::AllocateTexture(GLuint texture_id, int width, int height) {
+  glBindTexture(GL_TEXTURE_2D, texture_id);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+               GL_UNSIGNED_BYTE, rgb_buffer_.data());
+}
+
+void AreaLearningApp::RenderYuv() {
+  if (!is_yuv_texture_available_) {
+    return;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(yuv_buffer_mutex_);
+    if (swap_buffer_signal_) {
+      std::swap(yuv_buffer_, yuv_temp_buffer_);
+      swap_buffer_signal_ = false;
+    }
+  }
+
+  for (size_t i = 0; i < yuv_height_; ++i) {
+    for (size_t j = 0; j < yuv_width_; ++j) {
+      size_t x_index = j;
+      if (j % 2 != 0) {
+        x_index = j - 1;
+      }
+
+      size_t rgb_index = (i * yuv_width_ + j) * 3;
+      size_t rgba_index = (i * yuv_width_ + j) * 4;
+
+      // The YUV texture format is NV21,
+      // yuv_buffer_ buffer layout:
+      //   [y0, y1, y2, ..., yn, v0, u0, v1, u1, ..., v(n/4), u(n/4)]
+      Yuv2Rgb(
+          yuv_buffer_[i * yuv_width_ + j],
+          yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index + 1],
+          yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index],
+          &rgb_buffer_[rgb_index], &rgb_buffer_[rgb_index + 1],
+          &rgb_buffer_[rgb_index + 2]);
+    }
+  }
+
+  glBindTexture(GL_TEXTURE_2D, yuv_drawable_->GetTextureId());
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, yuv_width_, yuv_height_, 0, GL_RGB,
+               GL_UNSIGNED_BYTE, rgb_buffer_.data());
+
+  yuv_drawable_->Render(glm::mat4(1.0f), glm::mat4(1.0f));
+}
+
+void AreaLearningApp::RenderTextureId() {
+  double timestamp;
+  // TangoService_updateTexture() updates target camera's
+  // texture and timestamp.
+  int ret = TangoService_updateTexture(CAMERA_OF_INTEREST, &timestamp);
+  if (ret != TANGO_SUCCESS) {
+    LOGE(
+        "AreaLearningApp: Failed to update the texture id with error code: "
+            "%d",
+        ret);
+  }
+  video_overlay_drawable_->Render(glm::mat4(1.0f), glm::mat4(1.0f));
+}
 }  // namespace hello_area_description

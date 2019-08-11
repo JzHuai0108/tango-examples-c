@@ -29,6 +29,6 @@ android {
 
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':cpp_example_util')
+    api fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':cpp_example_util')
 }

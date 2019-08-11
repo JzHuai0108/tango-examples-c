@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 LOCAL_PATH := $(call my-dir)
+PROJECT_ROOT_FROM_JNI:= ../../../../..
 PROJECT_ROOT:= $(call my-dir)/../../../../..
 
 include $(CLEAR_VARS)
@@ -22,8 +23,16 @@ LOCAL_SHARED_LIBRARIES := tango_client_api tango_3d_reconstruction tango_support
 LOCAL_CFLAGS    := -std=c++11
 LOCAL_SRC_FILES := jni_interface.cc \
                    hello_area_description_app.cc \
-                   pose_data.cc
-LOCAL_LDLIBS    := -llog -L$(SYSROOT)/usr/lib
+                   pose_data.cc \
+                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/drawable_object.cc \
+                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/shaders.cc \
+                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/transform.cc \
+                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/util.cc \
+                   $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/video_overlay.cc
+
+LOCAL_C_INCLUDES := $(PROJECT_ROOT)/tango_gl/include \
+                    $(PROJECT_ROOT)/third_party/glm
+LOCAL_LDLIBS    := -llog -lGLESv2 -ljnigraphics -L$(SYSROOT)/usr/lib
 include $(BUILD_SHARED_LIBRARY)
 
 $(call import-add-path, $(PROJECT_ROOT))
