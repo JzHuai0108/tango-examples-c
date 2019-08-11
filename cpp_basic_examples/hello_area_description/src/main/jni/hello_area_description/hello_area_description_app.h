@@ -32,6 +32,7 @@ namespace hello_area_description {
 
 static const std::string kOutputDir = "/sdcard/tango";
 static const std::string kExportBasename = "export";
+static const std::string kPoseCsv = "W_T_B.csv";
 const TangoCameraId CAMERA_OF_INTEREST = TANGO_CAMERA_FISHEYE;
 // AreaLearningApp handles the application lifecycle and resources.
 class AreaLearningApp {
@@ -203,6 +204,8 @@ class AreaLearningApp {
 
   TangoSupport_Rotation display_rotation_;
 
+  std::string adf_uuid_string_;
+  std::string dataset_uuid_string_;
   void AllocateTexture(GLuint texture_id, int width, int height);
   void RenderYuv();
   void RenderTextureId();

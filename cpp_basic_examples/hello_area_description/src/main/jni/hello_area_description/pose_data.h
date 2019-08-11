@@ -22,6 +22,7 @@
 #include <string>
 
 #include <tango_client_api.h>  // NOLINT
+#include <fstream>
 
 namespace hello_area_description {
 // PoseData holds all pose related data. E.g. pose position, rotation and time-
@@ -37,7 +38,7 @@ class PoseData {
   void UpdatePose(const TangoPoseData& pose_data);
 
   // Reset all saved pose data.
-  void ResetPoseData();
+  void ResetPoseData(const std::string& odometry_dest_file);
 
   // Get pose data in current frame.
   //
@@ -48,7 +49,7 @@ class PoseData {
   //
   // @return: relocalized flag.
   bool IsRelocalized() { return is_relocalized_; }
-
+  void StartRecordingOdometry(const std::string& output_csv);
  private:
   // Relocalized flag, the relocalization is determined by the pose in start of
   // service with respect to ADF turns to valid.
@@ -56,6 +57,8 @@ class PoseData {
 
   TangoPoseData adf_T_device_pose_;
   TangoPoseData start_service_T_device_pose_;
+  std::string output_csv_;
+  std::ofstream output_stream_;
 };
 }  // namespace hello_area_description
 

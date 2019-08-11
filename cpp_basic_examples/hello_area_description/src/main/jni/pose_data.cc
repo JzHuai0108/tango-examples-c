@@ -34,6 +34,14 @@ void PoseData::UpdatePose(const TangoPoseData& pose_data) {
   if (pose_data.frame.base == TANGO_COORDINATE_FRAME_START_OF_SERVICE &&
       pose_data.frame.target == TANGO_COORDINATE_FRAME_DEVICE) {
     start_service_T_device_pose_ = pose_data;
+    // output_stream_ will check itself is_open or not in dumping
+    output_stream_ << std::setprecision(18) << pose_data.timestamp << " "
+                   << std::setprecision(9) << pose_data.translation[0] << " " << pose_data.translation[1]
+                   << " " << pose_data.translation[2] << std::setprecision(9)
+                   << " " << pose_data.orientation[0] << " " << pose_data.orientation[1]
+                   << " " << pose_data.orientation[2] << " " << pose_data.orientation[3]
+                   << "\n";
+
   } else if (pose_data.frame.base == TANGO_COORDINATE_FRAME_AREA_DESCRIPTION &&
              pose_data.frame.target == TANGO_COORDINATE_FRAME_DEVICE) {
     adf_T_device_pose_ = pose_data;
@@ -46,7 +54,19 @@ void PoseData::UpdatePose(const TangoPoseData& pose_data) {
   }
 }
 
-void PoseData::ResetPoseData() { is_relocalized_ = false; }
+void MoveFile(const std::string& old_name, const std::string& new_name) {
+  std::ifstream ifs(old_name, std::ios::in | std::ios::binary);
+  std::ofstream ofs(new_name, std::ios::out | std::ios::binary);
+  ofs << ifs.rdbuf();
+  std::remove(old_name.c_str());
+}
+
+void PoseData::ResetPoseData(const std::string& odometry_dest_file) {
+  is_relocalized_ = false;
+  output_stream_.close();
+  MoveFile(output_csv_, odometry_dest_file);
+  output_csv_ = "";
+}
 
 TangoPoseData PoseData::GetCurrentPoseData() {
   if (is_relocalized_) {
@@ -56,4 +76,8 @@ TangoPoseData PoseData::GetCurrentPoseData() {
   }
 }
 
+void PoseData::StartRecordingOdometry(const std::string& output_csv) {
+  output_csv_ = output_csv;
+  output_stream_.open(output_csv);
+}
 }  // namespace hello_area_description

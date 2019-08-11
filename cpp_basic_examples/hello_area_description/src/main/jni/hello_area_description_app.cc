@@ -110,6 +110,8 @@ void AreaLearningApp::OnCreate(JNIEnv* env, jobject caller_activity) {
   video_overlay_drawable_ = NULL;
   yuv_drawable_ = NULL;
   is_video_overlay_rotation_set_ = false;
+  adf_uuid_string_ = "";
+  dataset_uuid_string_ = "";
 }
 
 void AreaLearningApp::OnTangoServiceConnected(
@@ -234,6 +236,7 @@ void AreaLearningApp::OnTangoServiceConnected(
                             TangoService_getCameraIntrinsics);
 
     is_service_connected_ = true;
+    pose_data_.StartRecordingOdometry(kOutputDir + "/" + kPoseCsv);
   }
 }
 
@@ -247,7 +250,9 @@ void AreaLearningApp::OnDestroy() {
 
 void AreaLearningApp::OnPause() {
   // Delete resources.
-  pose_data_.ResetPoseData();
+  pose_data_.ResetPoseData(
+      kOutputDir + "/" + dataset_uuid_string_ +
+          "/" + kExportBasename + "/" + kPoseCsv);
   // When disconnecting from the Tango Service, it is important to make sure to
   // free your configuration object. Note that disconnecting from the service,
   // resets all configuration, and disconnects all callbacks. If an application
@@ -268,6 +273,8 @@ void AreaLearningApp::OnPause() {
   yuv_buffer_.clear();
   yuv_temp_buffer_.clear();
   this->DeleteDrawables();
+  adf_uuid_string_ = "";
+  dataset_uuid_string_ = "";
 }
 
 void DummyProgressCallback(int progress, void* callback_param) {
@@ -316,18 +323,20 @@ std::string AreaLearningApp::SaveAdf() {
   TangoUUID uuid_dataset;
   TangoService_Experimental_getCurrentDatasetUUID(&uuid_dataset);
 
-  std::string uuid_dataset_string = std::string(uuid_dataset);
+  std::string dataset_uuid_string = std::string(uuid_dataset);
   LOGI("AreaLearningApp: adf uuid %s, dataset string %s", adf_uuid_string.c_str(),
-          uuid_dataset_string.c_str());
+          dataset_uuid_string.c_str());
   saveAdfTime.tic();
-  ExportBagToRawFiles(kOutputDir + "/" + uuid_dataset_string.c_str());
+  ExportBagToRawFiles(kOutputDir + "/" + dataset_uuid_string);
   elapsed = saveAdfTime.toc();
   LOGI("AreaLearningApp: Exporting tango raw data takes %.7f s", elapsed);
+  adf_uuid_string_ = adf_uuid_string;
+  dataset_uuid_string_ = dataset_uuid_string;
   if (adf_uuid_string.empty()) {
     adf_uuid_string = std::string(36, '0');
   }
-  // uuid_dataset_string.empty() should not happen as it is a dir for saving data
-  return adf_uuid_string + uuid_dataset_string;
+  // dataset_uuid_string.empty() should not happen as it is a dir for saving data
+  return adf_uuid_string + dataset_uuid_string;
 }
 
 std::string AreaLearningApp::GetAdfMetadataValue(const std::string& uuid,
