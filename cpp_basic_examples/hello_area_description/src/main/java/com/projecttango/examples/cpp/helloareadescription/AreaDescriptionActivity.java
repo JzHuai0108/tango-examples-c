@@ -55,7 +55,7 @@ public class AreaDescriptionActivity extends Activity implements
       Environment.getExternalStorageDirectory().getAbsolutePath()
       + File.separator + "tango";
   private final String captureResultFile =
-      tangoOutputDir + File.separator + "gyro_accel.csv";
+      tangoOutputDir + File.separator + "imu0.csv";
   private GLSurfaceView mSurfaceView;
   private static IMUManager mImuManager;
 
@@ -190,25 +190,25 @@ public class AreaDescriptionActivity extends Activity implements
     }
     Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     mSaveAdfTask = null;
+    finish();
   }
   /**
    * Handles result from mSaveAdfTask.
    */
   @Override
   public void onSaveAdfFinished(String adfName, String adf_dataset_uuid) {
+    String toastMessage;
     if (adf_dataset_uuid.startsWith(SaveAdfTask.uuid_mask)) {
-      String toastMessage =
+      toastMessage =
               String.format(getResources().getString(R.string.save_adf_failed_toast_format),
                       adfName);
-      postMortemSaveAdf(toastMessage, adf_dataset_uuid);
-
     } else {
-      String toastMessage =
+      toastMessage =
               String.format(getResources().getString(R.string.save_adf_success_toast_format),
                       adfName, adf_dataset_uuid.substring(0, SaveAdfTask.uuid_len));
-      postMortemSaveAdf(toastMessage, adf_dataset_uuid);
-      finish();
+
     }
+    postMortemSaveAdf(toastMessage, adf_dataset_uuid);
   }
 
   /**
@@ -303,7 +303,7 @@ public class AreaDescriptionActivity extends Activity implements
     File file = new File(captureResultFile);
     // renaming the file and moving it to a new location
     String dest = tangoOutputDir + File.separator + adfUuid +
-        File.separator + "export" + File.separator + "gyro_accel.csv";
+        File.separator + "export" + File.separator + "imu0.csv";
 
     if(file.renameTo(new File(dest))) {
       // if file copied successfully then delete the original file
