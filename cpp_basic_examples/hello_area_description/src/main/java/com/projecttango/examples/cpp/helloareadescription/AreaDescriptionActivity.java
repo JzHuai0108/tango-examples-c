@@ -179,37 +179,36 @@ public class AreaDescriptionActivity extends Activity implements
     mSaveAdfTask.execute();
   }
 
-  /**
-   * Handles failed save from mSaveAdfTask.
-   */
-  @Override
-  public void onSaveAdfFailed(String adfName) {
-    String toastMessage =
-        String.format(getResources().getString(R.string.save_adf_failed_toast_format),
-                      adfName);
-    Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
-    mSaveAdfTask = null;
+  private void postMortemSaveAdf(String toastMessage, String adf_dataset_uuid) {
     if (mIsAreaLearningEnabled) {
       mImuManager.stopRecording();
-    }
-  }
-
-  /**
-   * Handles successful save from mSaveAdfTask.
-   */
-  @Override
-  public void onSaveAdfSuccess(String adfName, String adf_dataset_uuid) {
-    String toastMessage =
-        String.format(getResources().getString(R.string.save_adf_success_toast_format),
-                      adfName, adf_dataset_uuid.substring(0, SaveAdfTask.uuid_len));
-    if (mIsAreaLearningEnabled) {
-      mImuManager.stopRecording();
+      // move the inertial file to the export path regardless of
+      // the resulting state of saveAdf
       renameInertialDataFile(
-          adf_dataset_uuid.substring(SaveAdfTask.uuid_len, SaveAdfTask.uuid_len*2));
+              adf_dataset_uuid.substring(
+                      SaveAdfTask.uuid_len, SaveAdfTask.uuid_len * 2));
     }
     Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     mSaveAdfTask = null;
-    finish();
+  }
+  /**
+   * Handles result from mSaveAdfTask.
+   */
+  @Override
+  public void onSaveAdfFinished(String adfName, String adf_dataset_uuid) {
+    if (adf_dataset_uuid.startsWith(SaveAdfTask.uuid_mask)) {
+      String toastMessage =
+              String.format(getResources().getString(R.string.save_adf_failed_toast_format),
+                      adfName);
+      postMortemSaveAdf(toastMessage, adf_dataset_uuid);
+
+    } else {
+      String toastMessage =
+              String.format(getResources().getString(R.string.save_adf_success_toast_format),
+                      adfName, adf_dataset_uuid.substring(0, SaveAdfTask.uuid_len));
+      postMortemSaveAdf(toastMessage, adf_dataset_uuid);
+      finish();
+    }
   }
 
   /**

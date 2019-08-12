@@ -30,8 +30,7 @@ public class SaveAdfTask extends AsyncTask<Void, Integer, String> {
      * Listener to check if save ADF is successed.
      */
     public interface SaveAdfListener {
-        void onSaveAdfFailed(String adfName);
-        void onSaveAdfSuccess(String adfName, String adf_dataset_uuid);
+        void onSaveAdfFinished(String adfName, String adf_dataset_uuid);
     }
 
     Context mContext;
@@ -97,11 +96,7 @@ public class SaveAdfTask extends AsyncTask<Void, Integer, String> {
             mProgressDialog.dismiss();
         }
         if (mCallbackListener != null) {
-            if (adf_dataset_uuid.startsWith(uuid_mask)) {
-                mCallbackListener.onSaveAdfFailed(mAdfName);
-            } else {
-                mCallbackListener.onSaveAdfSuccess(mAdfName, adf_dataset_uuid);
-            }
+            mCallbackListener.onSaveAdfFinished(mAdfName, adf_dataset_uuid);
         }
     }
 }
