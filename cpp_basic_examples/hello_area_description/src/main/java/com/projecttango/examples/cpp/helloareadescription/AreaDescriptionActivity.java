@@ -30,6 +30,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
@@ -117,6 +118,8 @@ public class AreaDescriptionActivity extends Activity implements
   @Override
   protected void onResume() {
     super.onResume();
+    Log.d(TAG, "Keeping screen on for previewing recording.");
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     mSurfaceView.onResume();
     // Start the debug text UI update loop.
     mHandler.post(mUpdateUiLoopRunnable);
