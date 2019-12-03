@@ -194,6 +194,8 @@ public class AreaDescriptionActivity extends Activity implements
   }
   /**
    * Handles result from mSaveAdfTask.
+   *   Note this happens before onPause, so moving gyro_accel.csv which creates
+   *   necessary folders precedes moving W_T_B.csv. 
    */
   @Override
   public void onSaveAdfFinished(String adfName, String adf_dataset_uuid) {
@@ -302,9 +304,13 @@ public class AreaDescriptionActivity extends Activity implements
   private void renameInertialDataFile(String adfUuid) {
     File file = new File(captureResultFile);
     // renaming the file and moving it to a new location
-    String dest = tangoOutputDir + File.separator + adfUuid +
-        File.separator + "export" + File.separator + "gyro_accel.csv";
-
+    String destDir = tangoOutputDir + File.separator + adfUuid +
+        File.separator + "export";
+    String dest = destDir + File.separator + "gyro_accel.csv";
+    File folder = new File(destDir);
+    if (!folder.exists()) {
+      folder.mkdirs();
+    }
     if(file.renameTo(new File(dest))) {
       // if file copied successfully then delete the original file
       file.delete();

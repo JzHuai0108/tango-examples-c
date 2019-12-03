@@ -324,12 +324,12 @@ std::string AreaLearningApp::SaveAdf() {
   TangoService_Experimental_getCurrentDatasetUUID(&uuid_dataset);
 
   std::string dataset_uuid_string = std::string(uuid_dataset);
-  LOGI("AreaLearningApp: adf uuid %s, dataset string %s", adf_uuid_string.c_str(),
-          dataset_uuid_string.c_str());
-  saveAdfTime.tic();
-  ExportBagToRawFiles(kOutputDir + "/" + dataset_uuid_string);
-  elapsed = saveAdfTime.toc();
-  LOGI("AreaLearningApp: Exporting tango raw data takes %.7f s", elapsed);
+//  LOGI("AreaLearningApp: adf uuid %s, dataset string %s", adf_uuid_string.c_str(),
+//          dataset_uuid_string.c_str());
+//  saveAdfTime.tic();
+//  ExportBagToRawFiles(kOutputDir + "/" + dataset_uuid_string);
+//  elapsed = saveAdfTime.toc();
+//  LOGI("AreaLearningApp: Exporting tango raw data takes %.7f s", elapsed);
   adf_uuid_string_ = adf_uuid_string;
   dataset_uuid_string_ = dataset_uuid_string;
   if (adf_uuid_string.empty()) {
@@ -452,20 +452,14 @@ void AreaLearningApp::OnAdfSavingProgressChanged(int progress) {
 }
 
 void AreaLearningApp::OnFrameAvailable(const TangoImageBuffer *buffer) {
-  int64_t local_duration = buffer->exposure_duration_ns;
-  double dduration = local_duration * 1e-6;
-  LOGI("AreaLearningApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
+//  int64_t local_duration = buffer->exposure_duration_ns;
+//  double dduration = local_duration * 1e-6;
+//  LOGI("AreaLearningApp:: tango frame time %.9f, exposure time %.3f", buffer->timestamp, dduration);
 
   if (yuv_drawable_ == NULL || yuv_drawable_->GetTextureId() == 0) {
     LOGE("AreaLearningApp::yuv texture id not valid");
     return;
   }
-
-  if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
-    LOGE("AreaLearningApp: buffer format 0x%x, note yuv_420_888(0x23) "
-             "texture format is not supported well by this app", buffer->format);
-  }
-
 
   // The memory needs to be allocated after we get the first frame because we
   // need to know the size of the image.

@@ -34,6 +34,7 @@
     <string name="adf_path_view">ADF Path View</string>
     <string name="canvas_view">Canvas View</string>
     <string name="manage_adfs">Manage ADFs</string>
+    <string name="export_adf_bags">Export ADF Bags</string>
     <string name="api_adfs">API ADFs:</string>
     <string name="application_adfs">Application ADFs</string>
     <string name="uuid">UUID</string>

@@ -161,15 +161,13 @@ void HelloVideoApp::OnFrameAvailable(const TangoImageBuffer* buffer) {
     return;
   }
 
-  if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
-    LOGE("HelloVideoApp: buffer format 0x%x, note yuv_420_888(0x23) "
-                 "texture format is not supported well by this app", buffer->format);
-  }
-
-
   // The memory needs to be allocated after we get the first frame because we
   // need to know the size of the image.
   if (!is_yuv_texture_available_) {
+    if (buffer->format != TANGO_HAL_PIXEL_FORMAT_YCrCb_420_SP) {
+      LOGE("HelloVideoApp: buffer format 0x%x, note yuv_420_888(0x23) "
+                   "texture format is not supported well by this app", buffer->format);
+    }
     yuv_width_ = buffer->width;
     yuv_height_ = buffer->height;
     uv_buffer_offset_ = yuv_width_ * yuv_height_;

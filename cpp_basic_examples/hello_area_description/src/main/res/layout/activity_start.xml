@@ -36,4 +36,12 @@
         android:textSize="15sp"
         android:onClick="adfListViewClicked" />
 
+    <Button
+        android:id="@+id/adfbaglist"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:text="@string/export_adf_bags"
+        android:textSize="15sp"
+        android:onClick="adfBagListViewClicked" />
+
 </LinearLayout>

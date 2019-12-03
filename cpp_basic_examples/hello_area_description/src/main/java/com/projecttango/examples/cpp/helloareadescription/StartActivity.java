@@ -171,6 +171,10 @@ public class StartActivity extends Activity {
         startAdfListView();
     }
 
+    public void adfBagListViewClicked(View v) {
+//        startAdfBagListView();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // The result of the permission activity.
