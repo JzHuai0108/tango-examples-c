@@ -281,12 +281,14 @@ void DummyProgressCallback(int progress, void* callback_param) {
   LOGI("AreaLearningApp: Export dataset progress %d", progress);
 }
 
-void ExportBagToRawFiles(std::string dirToOpen) {
+void AreaLearningApp::ExportBagToRawFiles(std::string dataSessionPath) {
+  timing::Timer saveAdfTime;
+  saveAdfTime.tic();
   int callback_param = 0;
-  std::string output_path = dirToOpen + "/" + kExportBasename;
-  LOGI("AreaLearningApp: %s dirToExport %s", dirToOpen.c_str(), output_path.c_str());
+  std::string output_path = dataSessionPath + "/" + kExportBasename;
+  LOGI("AreaLearningApp: %s dirToExport %s", dataSessionPath.c_str(), output_path.c_str());
   Tango3DR_Status status = Tango3DR_extractRawDataFromDataset(
-          dirToOpen.c_str(), output_path.c_str(),
+          dataSessionPath.c_str(), output_path.c_str(),
           &DummyProgressCallback, &callback_param);
 
   if (status != TANGO_3DR_SUCCESS) {
@@ -298,6 +300,8 @@ void ExportBagToRawFiles(std::string dirToOpen) {
 
 //  Tango3dReconstructionAreaDescription areaDescription =
 //      Tango3dReconstructionAreaDescription.createFromDataset(dataset, null, null);
+  double elapsed = saveAdfTime.toc();
+  LOGI("AreaLearningApp: Exporting tango raw data takes %.7f s", elapsed);
 }
 
 
@@ -324,12 +328,7 @@ std::string AreaLearningApp::SaveAdf() {
   TangoService_Experimental_getCurrentDatasetUUID(&uuid_dataset);
 
   std::string dataset_uuid_string = std::string(uuid_dataset);
-//  LOGI("AreaLearningApp: adf uuid %s, dataset string %s", adf_uuid_string.c_str(),
-//          dataset_uuid_string.c_str());
-//  saveAdfTime.tic();
-//  ExportBagToRawFiles(kOutputDir + "/" + dataset_uuid_string);
-//  elapsed = saveAdfTime.toc();
-//  LOGI("AreaLearningApp: Exporting tango raw data takes %.7f s", elapsed);
+
   adf_uuid_string_ = adf_uuid_string;
   dataset_uuid_string_ = dataset_uuid_string;
   if (adf_uuid_string.empty()) {

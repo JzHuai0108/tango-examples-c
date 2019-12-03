@@ -99,6 +99,12 @@ public class TangoJniNative {
   public static native void deleteAdf(String uuid);
 
   /**
+   * Export the bags of an ADF session.
+   * @input dataSessionPath i.e., /sdcard/tango/uuid
+   */
+  public static native void exportBagToRawFiles(String dataSessionPath);
+
+  /**
    * Delegate {@code GLSurfaceView.onGlSurfaceCreated} to the native code code.
    */
   public static native void onGlSurfaceCreated();

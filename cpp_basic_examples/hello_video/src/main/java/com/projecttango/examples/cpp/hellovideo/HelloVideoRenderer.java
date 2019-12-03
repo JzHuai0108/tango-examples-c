@@ -35,7 +35,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class HelloVideoRenderer implements GLSurfaceView.Renderer {
     //create new java.util.Date object
     Date date = new Date();
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd_hh-mm-ss");
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
     String strDate = dateFormat.format(date);
 
     private String path = Environment.getExternalStorageDirectory().getAbsolutePath()

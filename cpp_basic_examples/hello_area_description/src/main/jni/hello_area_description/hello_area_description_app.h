@@ -122,6 +122,8 @@ class AreaLearningApp {
   // @param uuid: target ADF's uuid.
   void DeleteAdf(std::string uuid);
 
+  void ExportBagToRawFiles(std::string dataSessionPath);
+
   // Tango service pose callback function for pose data. Called when new
   // information about device pose is available from the Tango Service.
   //

@@ -67,4 +67,15 @@
         <item >Delete from  App space</item>
         <item >Import to API space</item>
     </string-array>
+
+    <string-array
+        name ="set_dialog_menu_items_bag" >
+        <item >Export bag data</item>
+        <item >Delete session</item>
+    </string-array>
+
+    <string-array
+        name ="set_dialog_menu_items_exported_data" >
+        <item >Delete exported data</item>
+    </string-array>
 </resources>

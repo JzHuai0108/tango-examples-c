@@ -24,7 +24,6 @@ import android.content.ServiceConnection;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -33,6 +32,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.projecttango.examples.cpp.util.TangoInitializationHelper;
 
 import java.io.File;
@@ -49,13 +49,10 @@ import java.io.File;
  */
 public class AreaDescriptionActivity extends Activity implements
       SetAdfNameDialog.CallbackListener, SaveAdfTask.SaveAdfListener {
-  // Tag for debug logging.
   private static final String TAG = AreaDescriptionActivity.class.getSimpleName();
-  private final String tangoOutputDir =
-      Environment.getExternalStorageDirectory().getAbsolutePath()
-      + File.separator + "tango";
-  private final String captureResultFile =
-      tangoOutputDir + File.separator + "gyro_accel.csv";
+  private String mTangoBagOutputDir;
+  private String mImuResultFile;
+  private String mMetadataFile;
   private GLSurfaceView mSurfaceView;
   private static IMUManager mImuManager;
 
@@ -88,7 +85,8 @@ public class AreaDescriptionActivity extends Activity implements
         TangoJniNative.onTangoServiceConnected(service, mIsAreaLearningEnabled,
                                                mIsLoadingAreaDescription);
         if (mIsAreaLearningEnabled) {
-          mImuManager.startRecording(captureResultFile);
+          SimpleDateLogger.logLocalTime(mMetadataFile);
+          mImuManager.startRecording(mImuResultFile);
         }
         // Display loaded ADF's UUID.
         runOnUiThread(new Runnable() {
@@ -111,7 +109,6 @@ public class AreaDescriptionActivity extends Activity implements
     queryDataFromStartActivity();
     setupUiComponents();
     TangoJniNative.onCreate(this);
-
     mImuManager = new IMUManager(this);
   }
 
@@ -195,7 +192,7 @@ public class AreaDescriptionActivity extends Activity implements
   /**
    * Handles result from mSaveAdfTask.
    *   Note this happens before onPause, so moving gyro_accel.csv which creates
-   *   necessary folders precedes moving W_T_B.csv. 
+   *   necessary folders precedes moving W_T_B.csv.
    */
   @Override
   public void onSaveAdfFinished(String adfName, String adf_dataset_uuid) {
@@ -231,6 +228,9 @@ public class AreaDescriptionActivity extends Activity implements
   private void queryDataFromStartActivity() {
     // Get user's input from the StartActivity.
     Intent initValueIntent = getIntent();
+    mTangoBagOutputDir = initValueIntent.getStringExtra(StartActivity.INTENT_TANGO_BAG_OUTPUT_DIR);
+    mImuResultFile = mTangoBagOutputDir + File.separator + "gyro_accel.csv";
+    mMetadataFile = mTangoBagOutputDir + File.separator + "session.yaml";
     mIsAreaLearningEnabled =
       initValueIntent.getBooleanExtra(StartActivity.USE_AREA_LEARNING, false);
     mIsLoadingAreaDescription =
@@ -302,11 +302,12 @@ public class AreaDescriptionActivity extends Activity implements
   }
 
   private void renameInertialDataFile(String adfUuid) {
-    File file = new File(captureResultFile);
+    File file = new File(mImuResultFile);
     // renaming the file and moving it to a new location
-    String destDir = tangoOutputDir + File.separator + adfUuid +
+    String destDir = mTangoBagOutputDir + File.separator + adfUuid +
         File.separator + "export";
     String dest = destDir + File.separator + "gyro_accel.csv";
+
     File folder = new File(destDir);
     if (!folder.exists()) {
       folder.mkdirs();
@@ -316,6 +317,13 @@ public class AreaDescriptionActivity extends Activity implements
       file.delete();
     } else {
       Log.e(TAG, "Failed to move inertial data to " + dest);
+    }
+    File dateFile = new File(mMetadataFile);
+    String dateDest = destDir + File.separator + "session.yaml";
+    if(dateFile.renameTo(new File(dateDest))) {
+      dateFile.delete();
+    } else {
+      Log.e(TAG, "Failed to move session metadata to " + dateDest);
     }
   }
 }

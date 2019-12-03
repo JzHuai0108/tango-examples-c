@@ -23,10 +23,12 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.ToggleButton;
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.util.Vector;
 
@@ -43,6 +45,10 @@ public class StartActivity extends Activity {
     private static final String INTENT_CLASS_PACKAGE = "com.google.tango";
     private static final String INTENT_DEPRECATED_CLASS_PACKAGE = "com.projecttango.tango";
 
+    public static final String INTENT_TANGO_BAG_OUTPUT_DIR="TANGO_BAG_OUTPUT_DIR";
+    private final String mTangoBagOutputDir =
+            Environment.getExternalStorageDirectory().getAbsolutePath()
+                    + File.separator + "tango";
     // Key string for load/save Area Description Files.
     private static final String AREA_LEARNING_PERMISSION =
             "ADF_LOAD_SAVE_PERMISSION";
@@ -172,7 +178,7 @@ public class StartActivity extends Activity {
     }
 
     public void adfBagListViewClicked(View v) {
-//        startAdfBagListView();
+        startAdfBagListView();
     }
 
     @Override
@@ -213,6 +219,7 @@ public class StartActivity extends Activity {
         Intent startADIntent = new Intent(this, AreaDescriptionActivity.class);
         startADIntent.putExtra(USE_AREA_LEARNING, mIsUseAreaLearning);
         startADIntent.putExtra(LOAD_ADF, mIsLoadAdf);
+        startADIntent.putExtra(INTENT_TANGO_BAG_OUTPUT_DIR, mTangoBagOutputDir);
         startActivity(startADIntent);
     }
 
@@ -220,6 +227,12 @@ public class StartActivity extends Activity {
     private void startAdfListView() {
         Intent startADFListViewIntent = new Intent(this, AdfUuidListViewActivity.class);
         startActivity(startADFListViewIntent);
+    }
+
+    private void startAdfBagListView() {
+        Intent startBagListViewIntent = new Intent(this, AdfBagListViewActivity.class);
+        startBagListViewIntent.putExtra(INTENT_TANGO_BAG_OUTPUT_DIR, mTangoBagOutputDir);
+        startActivity(startBagListViewIntent);
     }
 
     @Override

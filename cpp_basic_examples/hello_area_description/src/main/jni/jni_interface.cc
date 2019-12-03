@@ -105,6 +105,13 @@ Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_deleteAdf
   return app.DeleteAdf(uuid_str);
 }
 
+JNIEXPORT void JNICALL
+Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_exportBagToRawFiles(
+        JNIEnv* env, jobject, jstring sessionPath) {
+  std::string path_str(env->GetStringUTFChars(sessionPath, nullptr));
+  return app.ExportBagToRawFiles(path_str);
+}
+
 
 JNIEXPORT void JNICALL
 Java_com_projecttango_examples_cpp_helloareadescription_TangoJniNative_onGlSurfaceCreated(
