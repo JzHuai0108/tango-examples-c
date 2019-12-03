@@ -34,13 +34,6 @@ import javax.microedition.khronos.opengles.GL10;
  * Render onGlSurfaceDrawFrame all GL content to the glSurfaceView.
  */
 public class HelloVideoRenderer implements GLSurfaceView.Renderer {
-    //create new java.util.Date object
-    Date date = new Date();
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd_hh-mm-ss");
-    String strDate = dateFormat.format(date);
-
-    private String path = Environment.getExternalStorageDirectory().getAbsolutePath()
-            + File.separator + "fisheye" + File.separator + strDate;
     private int img_cnt = 0;
     private long lastTimeMills = 0;
     private float frameRate = 15.f;
@@ -55,7 +48,6 @@ public class HelloVideoRenderer implements GLSurfaceView.Renderer {
             Log.d("HelloVideoRenderer", "image rate " + frameRate);
         }
         lastTimeMills = presentTime;
-//        saveFisheyeToJpg(path + File.separator + presentTime + "000000.jpg");
     }
 
     // Called when the surface size changes.
@@ -65,11 +57,6 @@ public class HelloVideoRenderer implements GLSurfaceView.Renderer {
 
     // Called when the surface is created or recreated.
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        File file = new File(path);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
         TangoJniNative.onGlSurfaceCreated();
     }
-
 }
