@@ -55,7 +55,7 @@ public class AreaDescriptionActivity extends Activity implements
       Environment.getExternalStorageDirectory().getAbsolutePath()
       + File.separator + "tango";
   private final String captureResultFile =
-      tangoOutputDir + File.separator + "imu0.csv";
+      tangoOutputDir + File.separator + "gyro_accel.csv";
   private GLSurfaceView mSurfaceView;
   private static IMUManager mImuManager;
 
@@ -303,7 +303,7 @@ public class AreaDescriptionActivity extends Activity implements
     File file = new File(captureResultFile);
     // renaming the file and moving it to a new location
     String dest = tangoOutputDir + File.separator + adfUuid +
-        File.separator + "export" + File.separator + "imu0.csv";
+        File.separator + "export" + File.separator + "gyro_accel.csv";
 
     if(file.renameTo(new File(dest))) {
       // if file copied successfully then delete the original file
