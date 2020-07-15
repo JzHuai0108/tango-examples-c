@@ -15,6 +15,7 @@
  */
 
 #include <sstream>
+#include <iomanip>
 
 #include "hello_area_description/pose_data.h"
 
