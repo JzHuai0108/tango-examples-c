@@ -15,11 +15,22 @@
  */
 
 #include <tango_support.h>
-
+#include <sys/system_properties.h>
 #include "hello_video/hello_video_app.h"
 
 namespace {
 constexpr int kTangoCoreMinimumVersion = 9377;
+
+int getAndroidSdkVersion() {
+  char sdk_ver_str[1024];
+  int sdk_ver = -1;
+  if (__system_property_get("ro.build.version.sdk", sdk_ver_str)) {
+    sdk_ver = atoi(sdk_ver_str);
+  } // else
+  // Not running on Android or SDK version is not available
+  return sdk_ver;
+}
+
 void OnFrameAvailableRouter(void* context, TangoCameraId,
                             const TangoImageBuffer* buffer) {
   hello_video::HelloVideoApp* app =
@@ -59,6 +70,19 @@ void HelloVideoApp::OnCreate(JNIEnv* env, jobject caller_activity) {
     std::exit(EXIT_SUCCESS);
   }
 
+  // see https://github.com/Intermodalics/tango_ros/pull/371
+  // On asus zenphone of android API 24 tango api does not support
+  // connecting to fisheye camera.
+  int sdk_ver = getAndroidSdkVersion();
+  LOGI("HelloVideoApp::Android SDK Version %d", sdk_ver);
+  if (sdk_ver < 24) {
+    camera_id_ = TANGO_CAMERA_FISHEYE;
+  } else {
+    LOGI("HelloVideoApp::Android API Level is 24 or more, "
+         "Fisheye camera data is not available, "
+         "Color camera will be used instead");
+    camera_id_ = TANGO_CAMERA_COLOR;
+  }
   // Initialize variables
   is_yuv_texture_available_ = false;
   swap_buffer_signal_ = false;
@@ -98,14 +122,12 @@ void HelloVideoApp::OnTangoServiceConnected(JNIEnv* env, jobject binder) {
     std::exit(EXIT_SUCCESS);
   }
 
-  ret = TangoService_connectOnFrameAvailable(CAMERA_OF_INTEREST, this,
+  ret = TangoService_connectOnFrameAvailable(camera_id_, this,
                                              OnFrameAvailableRouter);
   if (ret != TANGO_SUCCESS) {
-    LOGE(
-        "HelloVideoApp::OnTangoServiceConnected,"
-        "Error connecting color frame %d",
-        ret);
-    std::exit(EXIT_SUCCESS);
+    LOGE("HelloVideoApp::OnTangoServiceConnected,"
+         "Error connecting camera %d with ret code %d",
+         camera_id_, ret);
   }
 
   // Connect to Tango Service, service will start running, and
@@ -225,7 +247,7 @@ void HelloVideoApp::OnDrawFrame() {
     // content is properly allocated.
     int texture_id = static_cast<int>(video_overlay_drawable_->GetTextureId());
     TangoErrorType ret = TangoService_connectTextureId(
-        CAMERA_OF_INTEREST, texture_id, nullptr, nullptr);
+        camera_id_, texture_id, nullptr, nullptr);
     if (ret != TANGO_SUCCESS) {
       LOGE(
           "HelloVideoApp: Failed to connect the texture id with error"
@@ -308,7 +330,7 @@ void HelloVideoApp::RenderTextureId() {
   double timestamp;
   // TangoService_updateTexture() updates target camera's
   // texture and timestamp.
-  int ret = TangoService_updateTexture(CAMERA_OF_INTEREST, &timestamp);
+  int ret = TangoService_updateTexture(camera_id_, &timestamp);
   if (ret != TANGO_SUCCESS) {
     LOGE(
         "HelloVideoApp: Failed to update the texture id with error code: "

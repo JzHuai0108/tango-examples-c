@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <string.h>
 
+#include <sys/system_properties.h>
 #include <tango_support.h>
 #include <tango_3d_reconstruction_api.h>
 #include <hello_area_description/mini_timer.h>
@@ -28,6 +29,17 @@
 namespace {
 // The minimum Tango Core version required from this application.
 constexpr int kTangoCoreMinimumVersion = 9377;
+
+int getAndroidSdkVersion() {
+  char sdk_ver_str[1024];
+  int sdk_ver = -1;
+  if (__system_property_get("ro.build.version.sdk", sdk_ver_str)) {
+    sdk_ver = atoi(sdk_ver_str);
+  } // else
+  // Not running on Android or SDK version is not available
+  return sdk_ver;
+}
+
 const int kVersionStringLength = 128;
 void OnFrameAvailableRouter(void* context, TangoCameraId,
                             const TangoImageBuffer* buffer) {
@@ -101,6 +113,17 @@ void AreaLearningApp::OnCreate(JNIEnv* env, jobject caller_activity) {
       env->GetMethodID(cls, "updateSavingAdfProgress", "(I)V");
 
   calling_activity_obj_ = env->NewGlobalRef(caller_activity);
+
+  int sdk_ver = getAndroidSdkVersion();
+  LOGI("AreaLearningApp::Android SDK Version %d", sdk_ver);
+  if (sdk_ver < 24) {
+    camera_id_ = TANGO_CAMERA_FISHEYE;
+  } else {
+    LOGI("AreaLearningApp::Android API Level is 24 or more, "
+         "Fisheye camera data is not available, "
+         "Color camera will be used instead");
+    camera_id_ = TANGO_CAMERA_COLOR;
+  }
 
   // Initialize variables
   is_yuv_texture_available_ = false;
@@ -212,14 +235,13 @@ void AreaLearningApp::OnTangoServiceConnected(
           ret);
       std::exit(EXIT_SUCCESS);
     }
-    ret = TangoService_connectOnFrameAvailable(CAMERA_OF_INTEREST, this,
+    ret = TangoService_connectOnFrameAvailable(camera_id_, this,
                                                OnFrameAvailableRouter);
     if (ret != TANGO_SUCCESS) {
-        LOGE(
-                "AreaLearningApp::OnTangoServiceConnected,"
-                        "Error connecting color frame %d",
-                ret);
-        std::exit(EXIT_SUCCESS);
+        LOGE("AreaLearningApp::OnTangoServiceConnected, "
+             "Error connecting camera %d with ret code %d",
+             camera_id_, ret);
+        // std::exit(EXIT_SUCCESS);
     }
     // Connect to the Tango Service, the service will start running:
     // point clouds can be queried and callbacks will be called.
@@ -519,7 +541,7 @@ void AreaLearningApp::OnDrawFrame() {
     // content is properly allocated.
     int texture_id = static_cast<int>(video_overlay_drawable_->GetTextureId());
     TangoErrorType ret = TangoService_connectTextureId(
-        CAMERA_OF_INTEREST, texture_id, nullptr, nullptr);
+        camera_id_, texture_id, nullptr, nullptr);
     if (ret != TANGO_SUCCESS) {
       LOGE(
           "AreaLearningApp: Failed to connect the texture id with error"
@@ -590,7 +612,7 @@ void AreaLearningApp::RenderTextureId() {
   double timestamp;
   // TangoService_updateTexture() updates target camera's
   // texture and timestamp.
-  int ret = TangoService_updateTexture(CAMERA_OF_INTEREST, &timestamp);
+  int ret = TangoService_updateTexture(camera_id_, &timestamp);
   if (ret != TANGO_SUCCESS) {
     LOGE(
         "AreaLearningApp: Failed to update the texture id with error code: "

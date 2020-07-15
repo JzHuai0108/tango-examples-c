@@ -25,7 +25,6 @@ LOCAL_CFLAGS    := -std=c++11
 
 LOCAL_SRC_FILES := jni_interface.cc \
                    hello_video_app.cc \
-                   snag_fisheye.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/drawable_object.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/shaders.cc \
                    $(PROJECT_ROOT_FROM_JNI)/tango_gl/src/transform.cc \

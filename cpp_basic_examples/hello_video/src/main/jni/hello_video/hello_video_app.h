@@ -27,8 +27,6 @@
 #include <tango-gl/util.h>
 #include <tango-gl/video_overlay.h>
 
-#include "hello_video/snag_fisheye.h"
-
 namespace hello_video {
 
 // HelloVideoApp handles the application lifecycle and resources.
@@ -102,7 +100,7 @@ class HelloVideoApp {
   tango_gl::VideoOverlay* yuv_drawable_;
 
   TextureMethod current_texture_method_;
-
+  TangoCameraId camera_id_;
   std::vector<uint8_t> yuv_buffer_;
   std::vector<uint8_t> yuv_temp_buffer_;
   std::vector<GLubyte> rgb_buffer_;
@@ -127,9 +125,6 @@ class HelloVideoApp {
   void RenderYuv();
   void RenderTextureId();
   void DeleteDrawables();
-
-  SaveFisheyeFrame fisheye_frame_saver_;
-  double yuv_data_timestamp_;
 };
 }  // namespace hello_video
 

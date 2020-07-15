@@ -33,7 +33,7 @@ namespace hello_area_description {
 static const std::string kOutputDir = "/sdcard/tango";
 static const std::string kExportBasename = "export";
 static const std::string kPoseCsv = "W_T_B.csv";
-const TangoCameraId CAMERA_OF_INTEREST = TANGO_CAMERA_FISHEYE;
+
 // AreaLearningApp handles the application lifecycle and resources.
 class AreaLearningApp {
  public:
@@ -183,6 +183,7 @@ class AreaLearningApp {
   jobject calling_activity_obj_;
   jmethodID on_saving_adf_progress_updated_;
 
+  TangoCameraId camera_id_;
   // video_overlay_ Render the camera video feedback onto the screen.
   tango_gl::VideoOverlay* video_overlay_drawable_;
   tango_gl::VideoOverlay* yuv_drawable_;
