@@ -62,6 +62,104 @@ different use cases of Tango technology:
 The **cpp_example_util** project contains some common utility code that
 is used for many samples.
 
+### Tango fisheye and IMU logger
+
+There are several apps to record images of the fisheye camera on Tango devices, 
+notably, Tango ROS streamer, and Eyefish cam for Tango.
+In my experience, [Tango ROS streamer](http://wiki.ros.org/tango_ros_streamer) publishes data from 
+the depth camera, the color camera, and the fisheye camera, at a frequency 
+[~15Hz](https://github.com/Intermodalics/tango_ros/issues/343) which is also discussed at [here](https://github.com/Intermodalics/tango_ros/issues/143),
+and publishes data from the IMU.
+[Eyefish cam for Tango](https://play.google.com/store/apps/details?id=com.bass.impact.eyefish&hl=en_US) 
+takes pictures with the fisheye camera.
+Both apps do not support accessing the fisheye camera with Android API >23, e.g., Asus Zenfone AR.
+
+Our app developed from the Tango sample, 
+[hello_area_description](https://github.com/googlearchive/tango-examples-c/tree/master/cpp_basic_examples/hello_area_description), 
+records data from the fisheye camera at a frequency ~30Hz, 
+and from the IMU at ~200Hz with Android API >=23.
+
+#### Install apk with ADB
+First of all, enable Developer option and USB debugging on the smartphone.
+From a computer with ADB, the command to install the apk to the smartphone is 
+```
+adb install hello_area_description-release.apk
+```
+If failure "INSTALL_FAILED_UPDATE_INCOMPATIBLE or INSTALL_FAILED_ALREADY_EXISTS" crops up, you may need to
+uninstall an existing hello_area_description app from the phone.
+
+
+#### Start logging
+To record data, open the app, C++ Hello Area Description Example, 
+in the start screen, toggle Learning mode on,
+then Click Start button to start logging data in a new screen.
+For Lenovo Phab2, the new screen will display the captured fisheye images.
+But for Asus Zenfone, the new screen does not show the fisheye images 
+because Android API24 does not support accessing the fisheye camera.
+
+#### Finish logging
+To finish logging, press Save ADF button in the new screen.
+A dialog comes up asking for a ADF name, click OK, as shown below. 
+
+![save-adf](cpp_basic_examples/hello_area_description/figures/save-adf.png)
+
+You do not need to change the default name 
+because existing data with the same ADF name will not be overwritten.
+
+After a few seconds, you should be back to the start screen and 
+you may record another session as you will.
+
+#### Extract logged data
+But the recorded data are in a rosbag of arcane Tango messages, 
+to access these data, you need to export them to ordinary files.
+To export them, press the Export ADF Bags button in the start screen, 
+in the next screen, you should see the list of ADF bags that have not been 
+exported on the left and the list of ADF bags that have been exported on the right. 
+Press on one ADF bag you would like to export for about 2 seconds, 
+then a dialog will come up showing options like Export bag data as shown below.
+
+![export-adf](cpp_basic_examples/hello_area_description/figures/export-adf.png)
+
+Press Export bag data, wait for some time which depends on the length of the ADF bag, 
+you should be able to see the exported bag on the right panel.
+
+#### Transfer data
+To copy recorded and exported data from the phone to a computer, 
+it is highly recommended to use the ADB tool.
+An example command line is
+```
+adb pull /sdcard/tango
+```
+where /sdcard/tango is dir in which the app's data are stored.
+
+#### Bag data
+To create a rosbag from the exported data, you may use the python script
+[kalibr_bagcreater](https://github.com/JzHuai0108/vio_common/blob/dev/python/kalibr_bagcreater.py).
+
+```
+python kalibr_bagcreater.py --folder="/data-dir/8cff2603-179e-22c9-8aba-66eb635cd2be/export" \
+ --imu="/data-dir/8cff2603-179e-22c9-8aba-66eb635cd2be/export/gyro_accel.csv" \
+ --output_bag="/data-dir/8cff2603-179e-22c9-8aba-66eb635cd2be/awesome.bag"
+```
+
+Citing
+------
+
+If you use the logger for your research, please consider citing the paper.
+```
+@INPROCEEDINGS{huai2019mars, 
+author={Jianzhu {Huai} and Yujia {Zhang} and Alper {Yilmaz}}, 
+booktitle={2019 IEEE SENSORS}, 
+title={The mobile AR sensor logger for Android and iOS devices}, 
+year={2019}, 
+volume={}, 
+number={}, 
+pages={},
+ISSN={}, 
+month={Oct},}
+```
+
+
 Support
 -------
 As a first step, view our [FAQ](http://stackoverflow.com/questions/tagged/google-project-tango?sort=faq&amp;pagesize=50)
