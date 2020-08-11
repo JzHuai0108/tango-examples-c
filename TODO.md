@@ -1,6 +1,8 @@
 ## Task: record the raw fisheye frames at > 25Hz with synchronized timestamps to the inertial measurement unit
 
-It is beneficial if the fisheye frames can be visualized while being recorded.
+**This has been completed.**
+The IMU data is saved with the Java classes from [MarsLogger](https://github.com/OSUPCVLab/mobile-ar-sensor-logger).
+The fisheye data is recorded with the Tango C client API.
 
 Possible solutions:
 ### 1. Hello area description + IMU sensor manager
@@ -11,11 +13,7 @@ The good news though is that the raw fisheye images and the accelerometer data a
 timestamped by the SENSOR_EVENT clock which can be used by the IMU sensor manager.
 Also the exported fisheye frames are at 30Hz regularly.
 
-is there an option to enable export gyro data? Not yet seen.
-
-Is there an option to only save bag while saving ADF as the procedure is so slow? No, adf has to be saved before exporting.
-
-Does the area description app show anything in the original master branch?
+is there an option to enable exporting gyro data within the tango API? Not yet seen.
 
 ### 2. Hello video + MediaEncoder
 
