@@ -578,26 +578,50 @@ void AreaLearningApp::RenderYuv() {
       swap_buffer_signal_ = false;
     }
   }
+  if (camera_id_ == TANGO_CAMERA_FISHEYE) {
+    for (size_t i = 0; i < yuv_height_; ++i) {
+      for (size_t j = 0; j < yuv_width_; ++j) {
+        size_t x_index = j;
+        if (j % 2 != 0) {
+          x_index = j - 1;
+        }
 
-  for (size_t i = 0; i < yuv_height_; ++i) {
-    for (size_t j = 0; j < yuv_width_; ++j) {
-      size_t x_index = j;
-      if (j % 2 != 0) {
-        x_index = j - 1;
+        size_t rgb_index = (i * yuv_width_ + j) * 3;
+        size_t rgba_index = (i * yuv_width_ + j) * 4;
+
+        // The YUV texture format is NV21,
+        // yuv_buffer_ buffer layout:
+        //   [y0, y1, y2, ..., yn, v0, u0, v1, u1, ..., v(n/4), u(n/4)]
+        Yuv2Rgb(
+                yuv_buffer_[i * yuv_width_ + j],
+                yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index + 1],
+                yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index],
+                &rgb_buffer_[rgb_index], &rgb_buffer_[rgb_index + 1],
+                &rgb_buffer_[rgb_index + 2]);
       }
+    }
+  } else if (camera_id_ == TANGO_CAMERA_COLOR) {
+    for (size_t i = 0; i < yuv_height_; ++i) {
+      for (size_t j = 0; j < yuv_width_; ++j) {
+        size_t x_index = j;
+        if (j % 2 != 0) {
+          x_index = j - 1;
+        }
+        size_t rgbi = yuv_height_ - 1 - i;
+        size_t rgbj = yuv_width_ - 1 - j;
+        size_t rgb_index = (rgbi * yuv_width_ + rgbj) * 3;
+        size_t rgba_index = (rgbi * yuv_width_ + rgbj) * 4;
 
-      size_t rgb_index = (i * yuv_width_ + j) * 3;
-      size_t rgba_index = (i * yuv_width_ + j) * 4;
-
-      // The YUV texture format is NV21,
-      // yuv_buffer_ buffer layout:
-      //   [y0, y1, y2, ..., yn, v0, u0, v1, u1, ..., v(n/4), u(n/4)]
-      Yuv2Rgb(
-          yuv_buffer_[i * yuv_width_ + j],
-          yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index + 1],
-          yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index],
-          &rgb_buffer_[rgb_index], &rgb_buffer_[rgb_index + 1],
-          &rgb_buffer_[rgb_index + 2]);
+        // The YUV texture format is NV21,
+        // yuv_buffer_ buffer layout:
+        //   [y0, y1, y2, ..., yn, v0, u0, v1, u1, ..., v(n/4), u(n/4)]
+        Yuv2Rgb(
+                yuv_buffer_[i * yuv_width_ + j],
+                yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index + 1],
+                yuv_buffer_[uv_buffer_offset_ + (i / 2) * yuv_width_ + x_index],
+                &rgb_buffer_[rgb_index], &rgb_buffer_[rgb_index + 1],
+                &rgb_buffer_[rgb_index + 2]);
+      }
     }
   }
 

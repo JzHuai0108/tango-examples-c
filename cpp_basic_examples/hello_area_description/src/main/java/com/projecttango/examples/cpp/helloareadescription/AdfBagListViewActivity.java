@@ -164,9 +164,12 @@ public class AdfBagListViewActivity extends Activity {
 
     private void updateAdfSessionList() {
         File file = new File(mTangoBagOutputDir);
-        File[] adfFileList = file.listFiles();
         mOriginalAdfDataList.clear();
         mExportedAdfDataList.clear();
+        if(!file.exists() || !file.isDirectory()) {
+            return;
+        }
+        File[] adfFileList = file.listFiles();
         for (int i = 0; i < adfFileList.length; ++i) {
             String sessionUuid = adfFileList[i].getName();
             if (hasBags(sessionUuid)) {
