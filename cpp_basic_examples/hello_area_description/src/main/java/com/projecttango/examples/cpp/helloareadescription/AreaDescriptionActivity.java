@@ -179,6 +179,16 @@ public class AreaDescriptionActivity extends Activity implements
   private void postMortemSaveAdf(String toastMessage, String adf_dataset_uuid) {
     if (mIsAreaLearningEnabled) {
       mImuManager.stopRecording();
+      // TODO(jhuai): Usually, a ADF session is saved to a dir with the dataset
+      // UUID as the basename. But on some lenovo Phab2 device, the dir's
+      // basename may be a date_time string like 20200811_194553.
+      // In this case, the below approach puts the inertial data to a dir
+      // different from the session dir. Ideally, we should be able to set
+      // or get the dir of the saved session, but scarce info of the
+      // Tango C/Java client API prevents me from doing so.
+      // As a result, the user have to associate these files by comparing
+      // dir creation times.
+
       // move the inertial file to the export path regardless of
       // the resulting state of saveAdf
       renameInertialDataFile(

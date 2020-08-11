@@ -356,7 +356,8 @@ std::string AreaLearningApp::SaveAdf() {
   if (adf_uuid_string.empty()) {
     adf_uuid_string = std::string(36, '0');
   }
-  // dataset_uuid_string.empty() should not happen as it is a dir for saving data
+  // dataset_uuid_string.empty() should not happen, as
+  // it is often times a dir for saving data.
   return adf_uuid_string + dataset_uuid_string;
 }
 
