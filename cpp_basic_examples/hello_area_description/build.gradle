@@ -9,6 +9,10 @@ android {
             keyAlias properties.getProperty('keyAlias')
             storePassword properties.getProperty('storePassword')
             keyPassword properties.getProperty('keyPassword')
+
+            // Optional, specify signing versions used
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
     compileSdkVersion 23
